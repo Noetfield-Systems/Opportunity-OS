@@ -1,0 +1,63 @@
+name: Opportunity OS production acceptance
+on:
+  pull_request:
+  push:
+    branches: [main, feat/premium-relationship-workspace-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Node syntax and source contracts
+        run: npm run check
+      - name: Isolated HTTP/Persistence Gateway Acceptance
+        run: npm test
+      - name: Docker artifact manifest
+        run: |
+          test -f Dockerfile
+          test -f public/index.html
+          test -f public/styles.css
+          test -f public/app.js
+          test -f public/favicon.svg
+          grep -q 'USER opportunity' Dockerfile
+          ! grep -R 'localStorage\|sessionStorage' public/app.js
+          ! grep -R 'AGENT_PRIVATE_KEY\|DATABASE_URL=' public/
+  browser:
+    runs-on: ubuntu-latest
+    needs: gateway
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test-only Chromium runner
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start isolated app
+        run: |
+          PORT=8080 node server.mjs > /tmp/opportunity-os-server.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -sf http://127.0.0.1:8080/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/opportunity-os-server.log
+          exit 1
+      - name: Actual Chromium public and Founder journeys (mock source)
+        run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: opportunity-os-browser-failure
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 3
