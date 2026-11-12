@@ -16,9 +16,9 @@ assert.match(r.headers.get("content-security-policy")||"",/frame-ancestors 'none
 checks.push("Full premium app HTML, pipeline, matching and CSP reachable");
 r=await check("/apply");assert.equal(r.status,200);assert.match(r.text,/id="intakeForm"/);
 checks.push("Public intake page reachable");
-r=await check("/app.js");assert.equal(r.status,200);assert.match(r.text,/\\/api\\/operator\\/cases/);
+r=await check("/app.js");assert.equal(r.status,200);assert.ok(r.text.includes("/api/operator/cases"));
 checks.push("Live browser application bundle reachable");
-r=await check("/styles.css");assert.equal(r.status,200);assert.match(r.text,/\\.hero-orbit/);
+r=await check("/styles.css");assert.equal(r.status,200);assert.ok(r.text.includes(".hero-orbit"));
 checks.push("Live premium responsive styling reachable");
 r=await check("/api/operator/cases");assert.equal(r.status,401,"Unauthenticated case API must fail closed");
 checks.push("Unauthenticated Founder case endpoint rejected");
