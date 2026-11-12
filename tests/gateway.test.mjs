@@ -1,0 +1,152 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import http from "node:http";
+import {readFile} from "node:fs/promises";
+import {fileURLToPath} from "node:url";
+import path from "node:path";
+import {createApp,recommendMatches,validatePublicIntake,HTTPError} from "../server.mjs";
+
+const sample={
+ name:"Research Collaborator",email:"person@example.invalid",organization:"Example Company",
+ title:"Build a reciprocal partner pilot",description:"A scoped B2B partnership proposal offering real buyer introductions and implementation advice.",
+ kind:"partnership",initiative:"noetfield",role:"partner",source:"linkedin",
+ offer:"Introductions to buyers in construction",ask:"Construction workflow pilot",
+ consent:true,reference_url:"https://example.com/proposal",deadline:"2026-11-20",terms:"Discuss terms"
+};
+const cases=[
+ {intake_id:"INT-ABCDEF123456",person:"Partner One",email:"first@example.invalid",
+  organization:"One Inc",initiative:"noetfield",stage:"NEW",title:"Buyer connections",
+  offer:"Introductions to buyers in construction",ask:"AI workflow pilot",
+  consent_contact:true,priority_score:80,revision:0,next_action_due:"2026-11-19"},
+ {intake_id:"INT-ABCDEF123457",person:"Partner Two",email:"second@example.invalid",
+  organization:"Two Inc",initiative:"noetfield",stage:"QUALIFYING",title:"Construction AI build",
+  offer:"AI workflow pilot for construction",ask:"Introductions to buyers",
+  consent_contact:true,priority_score:67,revision:2,next_action_due:null},
+ {intake_id:"INT-ABCDEF123458",person:"Third",email:"third@example.invalid",
+  organization:"Independent Ltd",initiative:"trustfield",stage:"NEW",title:"Independent product",
+  offer:"AI workflow pilot for construction",ask:"Introductions to buyers",
+  consent_contact:true,priority_score:65,revision:0},
+];
+function listen(server){return new Promise(resolve=>server.listen(0,"127.0.0.1",()=>resolve("http://127.0.0.1:"+server.address().port)))}
+function close(server){return new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()))}
+async function read(req){let s="";for await(const c of req)s+=c;return s?JSON.parse(s):{}}
+async function fixture(fn){
+ let canonicalIntake=null,patch=null,activity=null,invitation=null;
+ const upstream=http.createServer(async(req,res)=>{
+  const url=new URL(req.url,"http://localhost");
+  const p=url.pathname;
+  res.setHeader("Content-Type","application/json");
+  const send=(code,data)=>{res.statusCode=code;res.end(JSON.stringify(data))};
+  if(p==="/api/intake/health")return send(200,{storage:"postgres",ok:true});
+  if(p==="/health")return send(200,{status:"ok",service:"company-os"});
+  if(p==="/api/intake"&&req.method==="POST"){canonicalIntake=await read(req);return send(200,{intake_id:"INT-CANON123456",request_id:canonicalIntake.request_id,deduped:false})}
+  if(!req.headers["x-admin-secret"]||req.headers["x-admin-secret"]!=="fixture-key-123456")
+   return send(403,{detail:"FORBIDDEN"});
+  if(p==="/api/opportunities/desk/page")return send(200,{items:cases,total:3,limit:100,offset:0,source:"canonical_platform_public_intakes"});
+  if(p.endsWith("/relationship"))return send(200,{schema:"noetfield.connect.relationship-graph.v1",
+   opportunity_count:2,person_id:"claim_person_source",nodes:[{type:"person_claim",label:"Partner One"},{type:"opportunity",id:cases[0].intake_id,venture:"noetfield",label:"Buyer connections"}],
+   edges:[{from:"claim_person_source",to:cases[0].intake_id,provenance:cases[0].intake_id}],
+   timeline:[{kind:"intake.persisted",intake_id:cases[0].intake_id}]});
+  if(p==="/api/opportunities/desk/"+cases[0].intake_id&&req.method==="PATCH"){patch=await read(req);return send(200,{persisted:true,source_intake_id:cases[0].intake_id,state:{revision:1},external_action_executed:false})}
+  if(p.endsWith("/activity")&&req.method==="POST"){activity=await read(req);return send(200,{persisted:true,source_intake_id:cases[0].intake_id,independently_verified:false})}
+  if(p.endsWith("/invitations")&&req.method==="POST"){invitation=await read(req);return send(200,{created:true,state:"PREPARED_NOT_SENT",invitation_id:"inv_abcdabcdabcdabcd",share_token:"privatetokensecret"+"_123456789012345678901234567890"})}
+  return send(404,{detail:"CANONICAL_ROUTE_NOT_FOUND"});
+ });
+ const upstreamBase=await listen(upstream);
+ const app=http.createServer(createApp({platformBase:upstreamBase,companyBase:upstreamBase}));
+ const base=await listen(app);
+ try{await fn({base,getEvidence:()=>({canonicalIntake,patch,activity,invitation})})}finally{await close(app);await close(upstream)}
+}
+async function req(base,p,{method="GET",body=null,key=null}={}){
+ const res=await fetch(base+p,{method,headers:{"Accept":"application/json",
+  ...(body?{"Content-Type":"application/json"}:{}),...(key?{"X-Admin-Secret":key}:{})},
+  ...(body?{body:JSON.stringify(body)}:{})});
+ const contentType=res.headers.get("content-type")||"";
+ return {status:res.status,headers:res.headers,data:contentType.includes("application/json")?await res.json():await res.text()};
+}
+
+test("canonical public intake validation enforces consent, metadata, source and scoped venture",()=>{
+ const good=validatePublicIntake(sample);
+ assert.equal(good.metadata.form_id,"nfConnectWizard");
+ assert.equal(good.metadata.initiative,"noetfield");
+ assert.equal(good.metadata.consent_contact,true);
+ assert.equal(good.vector,"external-opportunities");
+ assert.match(good.request_id,/^RID-OPP-/);
+ assert.equal(good.metadata.lead_source,"linkedin");
+ assert.equal(good.metadata.offering,sample.offer);
+ for(const changes of [{consent:false},{kind:"untrusted"},{initiative:"other-company"},
+   {reference_url:"javascript:alert(1)"},{email:"not-an-email"},{title:"a"},{website:"bot"}]){
+  assert.throws(()=>validatePublicIntake({...sample,...changes}),HTTPError);
+ }
+});
+test("reciprocal matching excludes cross-venture, unconsenting and self-pairs",()=>{
+ const matches=recommendMatches(cases);
+ assert.equal(matches.length,1);
+ assert.deepEqual(matches[0].source_ids,[cases[0].intake_id,cases[1].intake_id]);
+ assert.equal(matches[0].venture,"noetfield");
+ assert.equal(matches[0].status,"PROPOSED_NOT_SHARED_OR_ACCEPTED");
+ assert.equal(matches[0].cash_collected,null);
+ assert.deepEqual(recommendMatches(cases.map(x=>({...x,consent_contact:false}))),[]);
+ assert.deepEqual(recommendMatches(cases.map(x=>({...x,email:"same@example.invalid"}))),[]);
+});
+test("static premium HTML and script contain complete real journeys and no storage of admin secret",async()=>{
+ const dir=path.join(path.dirname(fileURLToPath(import.meta.url)),"../public");
+ const html=await readFile(path.join(dir,"index.html"),"utf8"),js=await readFile(path.join(dir,"app.js"),"utf8");
+ for(const target of ["overview","pipeline","relationships","matching","execution","revenue","apply","systems"])
+  assert.match(html,new RegExp('data-screen="'+target+'"'));
+ for(const id of ["unlockForm","intakeForm","caseUpdateForm","activityForm","inviteForm","caseDialog","matchesList"])
+  assert.ok(html.includes('id="'+id+'"'));
+ assert.ok(js.includes("/api/operator/cases"));
+ assert.ok(js.includes("www.noetfield.com/connect/respond/#case="));
+ assert.ok(!js.includes("localStorage"));
+ assert.ok(!js.includes("sessionStorage"));
+ assert.ok(html.includes("No demo leads. No phantom bookings."));
+});
+test("end-to-end gateway: health, verified public persistence, auth, graph, matching, activity and invitations",async()=>{
+ await fixture(async({base,getEvidence})=>{
+  const health=await req(base,"/health");assert.equal(health.status,200);
+  assert.equal(health.data.persistence,"UPSTREAM_ONLY");
+  const system=await req(base,"/api/system");assert.equal(system.status,200);
+  assert.equal(system.data.platform.storage,"postgres");
+  assert.equal(system.data.company_os.reachable,true);
+  const missing=await req(base,"/api/operator/cases");assert.equal(missing.status,401);
+  const wrong=await req(base,"/api/operator/cases",{key:"wrong-key-12345"});assert.equal(wrong.status,403);
+  const key="fixture-key-123456";
+  const list=await req(base,"/api/operator/cases?limit=100&offset=0",{key});
+  assert.equal(list.status,200);assert.equal(list.data.items.length,3);
+  assert.equal(list.data.source,"canonical_platform_public_intakes");
+  const match=await req(base,"/api/operator/matches",{key});
+  assert.equal(match.data.matches.length,1);assert.equal(match.data.verified_collected_cash,null);
+  const graph=await req(base,"/api/operator/cases/INT-ABCDEF123456/relationship",{key});
+  assert.equal(graph.status,200);assert.equal(graph.data.opportunity_count,2);
+  const updated=await req(base,"/api/operator/cases/INT-ABCDEF123456",{method:"PATCH",key,
+   body:{expected_revision:0,stage:"QUALIFYING",owner:"Founder",next_action:"Call the partner",due_date:"2026-11-20",note:"Review offer"}});
+  assert.equal(updated.status,200);assert.equal(updated.data.persisted,true);
+  const observed=await req(base,"/api/operator/cases/INT-ABCDEF123456/activity",{method:"POST",key,
+   body:{expected_revision:1,action:"draft_prepared",body:"Followup drafted; not sent",evidence_url:""}});
+  assert.equal(observed.status,200);assert.equal(observed.data.independently_verified,false);
+  const invite=await req(base,"/api/operator/cases/INT-ABCDEF123456/invitations",{method:"POST",key,
+   body:{expected_revision:2,scope:"collaboration",message:"A scoped proposal to exchange introductions and value",request_id:"req_123456789abcdef123456789"}});
+  assert.equal(invite.status,200);assert.equal(invite.data.state,"PREPARED_NOT_SENT");
+  const forbidden=await req(base,"/api/operator/cases/INT-ABCDEF123456",{method:"PATCH",key,
+   body:{stage:"WON",cash_collected:999999}});
+  assert.equal(forbidden.status,422);
+  const saved=await req(base,"/api/intake",{method:"POST",body:sample});
+  assert.equal(saved.status,201);assert.equal(saved.data.persisted,true);
+  assert.equal(saved.data.accepted,false);assert.equal(saved.data.agent_dispatched,false);
+  assert.equal(saved.data.cash_collected,null);
+  assert.equal(saved.data.intake_id,"INT-CANON123456");
+  const evidence=getEvidence();
+  assert.equal(evidence.canonicalIntake.metadata.form_id,"nfConnectWizard");
+  assert.equal(evidence.canonicalIntake.metadata.consent_contact,true);
+  assert.equal(evidence.patch.next_action,"Call the partner");
+  assert.equal(evidence.activity.action,"draft_prepared");
+  assert.equal(evidence.invitation.scope,"collaboration");
+  const page=await req(base,"/");assert.equal(page.status,200);
+  assert.match(page.data,/Every connection/);
+  assert.match(page.headers.get("content-security-policy"),/frame-ancestors 'none'/);
+  const js=await req(base,"/app.js");assert.equal(js.status,200);
+  const favicon=await req(base,"/favicon.svg");assert.equal(favicon.status,200);
+  const bad=await req(base,"/../../.env");assert.equal(bad.status,404);
+ });
+});
