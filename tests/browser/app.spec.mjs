@@ -15,7 +15,7 @@ test("public intake: three-step consent + genuine source receipt (fixture only)"
  await page.locator('[data-form-step="0"] [data-next-step]').click();
  await expect(page.locator('[data-form-step="1"]')).toBeVisible();
  await page.locator('[name="title"]').fill("A focused partner pilot");
- await page.locator('[name="description"]').fill("We can introduce business buyers and work together on a practical commercial proof of value.");
+ await page.locator('textarea[name="description"]').fill("We can introduce business buyers and work together on a practical commercial proof of value.");
  await page.locator('[name="offer"]').fill("Buyer introductions in British Columbia");
  await page.locator('[name="ask"]').fill("A workflow pilot and partner collaboration");
  await page.locator('[data-form-step="1"] [data-next-step]').click();
