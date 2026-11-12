@@ -264,7 +264,7 @@ function formStep(index){
  document.querySelectorAll("[data-step-dot]").forEach(el=>el.classList.toggle("active",Number(el.dataset.stepDot)===state.step));
 }
 function validStep(){
- const field=$('[data-form-step="'+state.step+'"]');
+ const field=document.querySelector('[data-form-step="'+state.step+'"]');
  if(!field)return false;
  for(const el of field.querySelectorAll("input:not(.honeypot),select,textarea")){
   if(!el.checkValidity()){el.reportValidity();return false}
