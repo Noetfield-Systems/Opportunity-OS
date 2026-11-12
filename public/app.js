@@ -233,7 +233,7 @@ async function onInvite(ev){
   if(receipt.created!==true||!receipt.share_token||!receipt.invitation_id)throw Error("No new private token issued");
   const url="https://www.noetfield.com/connect/respond/#case="+encodeURIComponent(x.intake_id)
     +"&inv="+encodeURIComponent(receipt.invitation_id)+"&token="+encodeURIComponent(receipt.share_token);
-  // Copyable private bearer URL remains in the live DOM only, not localStorage or logs.
+  // Copyable private bearer URL remains in the live DOM only, not persistent browser storage or logs.
   await loadCases();const updated=state.cases.find(row=>row.intake_id===x.intake_id);
   if(updated)renderDialog(updated);
   const wrap=$("invitationResult");wrap.hidden=false;wrap.replaceChildren();
