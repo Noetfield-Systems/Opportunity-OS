@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10161b">
+<meta name="description" content="Opportunity OS — relationship intelligence, reciprocal matching and source-backed execution. Built on canonical Noetfield Connect.">
+<meta name="robots" content="noindex,nofollow">
+<title>Opportunity OS — Relationship Intelligence</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/styles.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<div class="shell" id="shell">
+  <aside class="sidebar" id="sidebar" aria-label="Workspace navigation">
+    <a class="brand" href="/" aria-label="Opportunity OS home">
+      <span class="brand-icon" aria-hidden="true"><span class="brand-ring"></span><span class="brand-core"></span></span>
+      <span class="brand-words"><strong>OPPORTUNITY<span class="mark">OS</span></strong><small>THE RELATIONSHIP ENGINE</small></span>
+    </a>
+    <div class="side-heading">WORKSPACE <span>01</span></div>
+    <nav class="side-nav" aria-label="Main sections">
+      <button class="nav-item active" data-view="overview" type="button"><span class="nav-glyph">◫</span><span>Overview</span><span class="nav-shortcut">01</span></button>
+      <button class="nav-item" data-view="pipeline" type="button"><span class="nav-glyph">▤</span><span>Opportunity pipeline</span><span class="nav-shortcut">02</span></button>
+      <button class="nav-item" data-view="relationships" type="button"><span class="nav-glyph">⌘</span><span>Relationship graph</span><span class="nav-shortcut">03</span></button>
+      <button class="nav-item" data-view="matching" type="button"><span class="nav-glyph">◇</span><span>Reciprocal matching</span><span class="nav-shortcut">04</span></button>
+      <button class="nav-item" data-view="execution" type="button"><span class="nav-glyph">↗</span><span>Follow-up & execution</span><span class="nav-shortcut">05</span></button>
+      <button class="nav-item" data-view="revenue" type="button"><span class="nav-glyph">▥</span><span>Commercial outcomes</span><span class="nav-shortcut">06</span></button>
+    </nav>
+    <div class="side-heading">NETWORK <span>02</span></div>
+    <nav class="side-nav" aria-label="Network sections">
+      <button class="nav-item" data-view="apply" type="button"><span class="nav-glyph">⊕</span><span>Submit an opportunity</span><span class="nav-shortcut">07</span></button>
+      <button class="nav-item" data-view="systems" type="button"><span class="nav-glyph">◎</span><span>Connected systems</span><span class="nav-shortcut">08</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="source-card">
+        <div class="source-top"><span class="pulse-dot"></span><span>SOURCE OF TRUTH</span></div>
+        <strong>Noetfield Platform</strong>
+        <p>Original cases, relationships and evidence. No duplicate CRM.</p>
+        <a href="https://www.noetfield.com/connect/" target="_blank" rel="noopener noreferrer">Canonical Connect ↗</a>
+      </div>
+      <div class="side-foot"><span>NOETFIELD SYSTEMS</span><span>v1.0</span></div>
+    </div>
+  </aside>
+
+  <div class="main-shell">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button id="menuButton" class="icon-button mobile-menu" type="button" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
+        <span class="crumb">NOETFIELD <span>/</span> OPPORTUNITY OS</span>
+        <span class="topbar-divider"></span>
+        <span class="crumb-highlight" id="currentViewLabel">Overview</span>
+      </div>
+      <div class="topbar-actions">
+        <span class="live-pill" id="platformBadge"><span class="status-dot waiting"></span><span>Checking source</span></span>
+        <button class="button button-quiet" id="refreshButton" type="button" title="Reload canonical records">↻ <span class="desktop-label">Refresh</span></button>
+        <button class="button button-quiet" id="lockButton" type="button" hidden>Lock workspace</button>
+        <button class="button button-primary button-small" data-view="apply" type="button"><span>＋</span> New opportunity</button>
+      </div>
+    </header>
+
+    <main class="content" id="main">
+      <div class="toast-container" id="toastContainer" role="status" aria-live="polite"></div>
+
+      <section class="view" data-screen="overview" aria-labelledby="overviewTitle">
+        <div class="eyebrow"><span class="eyebrow-rule"></span> THE OPPORTUNITY INTELLIGENCE PLATFORM <span class="eyebrow-suffix">/ FOUNDER EDITION</span></div>
+        <div class="hero">
+          <div class="hero-content">
+            <span class="hero-kicker">PEOPLE. POSSIBILITY. PROGRESS.</span>
+            <h1 id="overviewTitle">Every connection.<br><em>A possible breakthrough.</em></h1>
+            <p>One operating surface for relationships, opportunities and real outcomes. Discover mutual value, qualify the next move and turn intent into accountable action — with evidence at every step.</p>
+            <div class="hero-actions">
+              <button class="button button-light" data-view="pipeline" type="button">Explore opportunities <span>↗</span></button>
+              <button class="button button-outline-light" data-view="apply" type="button">Share an opportunity</button>
+            </div>
+          </div>
+          <div class="hero-orbit" aria-hidden="true">
+            <div class="orbit orbit-outer"></div><div class="orbit orbit-mid"></div><div class="orbit orbit-inner"></div>
+            <div class="orbit-node orbit-node-a"></div><div class="orbit-node orbit-node-b"></div><div class="orbit-node orbit-node-c"></div><div class="orbit-node orbit-node-d"></div>
+            <div class="orbit-center"><span class="orbit-spark">✳</span><span>VALUE<br>CREATED</span></div>
+            <div class="orbit-caption">RELATIONSHIPS → EXECUTION</div>
+          </div>
+        </div>
+
+        <div class="section-row"><div><span class="section-kicker">THE CURRENT PICTURE</span><h2>Command center <span class="section-muted">/ source-backed</span></h2></div><span class="section-info" id="overviewWindow">Live records, not modeled revenue</span></div>
+        <div class="stat-grid">
+          <article class="stat"><div class="stat-head"><span>CANONICAL OPPORTUNITIES</span><span class="stat-icon">▦</span></div><strong id="statTotal">—</strong><div class="stat-footer"><span class="trend">SOURCE</span> Cases persisted in Platform</div></article>
+          <article class="stat"><div class="stat-head"><span>ACTIVE PIPELINE</span><span class="stat-icon">↗</span></div><strong id="statActive">—</strong><div class="stat-footer"><span class="trend">LIVE</span> Open for a next action</div></article>
+          <article class="stat"><div class="stat-head"><span>FOLLOW-UPS DUE</span><span class="stat-icon">◷</span></div><strong id="statDue">—</strong><div class="stat-footer"><span class="trend amber">ACTION</span> Due or overdue in source</div></article>
+          <article class="stat"><div class="stat-head"><span>VERIFIED CASH</span><span class="stat-icon">◈</span></div><strong id="statRevenue">—</strong><div class="stat-footer"><span class="trend neutral">UNWIRED</span> Independent payment evidence</div></article>
+        </div>
+
+        <div class="two-column">
+          <section class="panel panel-tall">
+            <div class="panel-heading"><div><span class="section-kicker">INTAKE → QUALIFY → EXECUTE</span><h3>Opportunity flow</h3></div><button class="text-button" data-view="pipeline" type="button">Full pipeline ↗</button></div>
+            <div class="flow-steps" id="stageFlow"><p class="empty-line">Unlock the workspace to load source-backed opportunities.</p></div>
+            <div class="panel-caption">Operational stages are recorded by a human owner. Source-reported progress is not proof of completed work.</div>
+          </section>
+          <section class="panel panel-tall">
+            <div class="panel-heading"><div><span class="section-kicker">ATTENTION, NOT NOISE</span><h3>Priority opportunities</h3></div><span class="small-chip">REAL RECORDS</span></div>
+            <div class="priority-list" id="priorityList"><div class="empty-illustration">◇<p>Real opportunities will appear here after you unlock the workspace.</p></div></div>
+          </section>
+        </div>
+
+        <div class="section-row section-bottom"><div><span class="section-kicker">BUILT FOR RECIPROCITY</span><h2>More than a CRM. <span class="section-muted">An execution network.</span></h2></div></div>
+        <div class="feature-grid">
+          <article class="feature"><span class="feature-icon">⌘</span><h3>People, not rows</h3><p>Multiple roles, organizations and opportunities on source-linked relationship timelines.</p></article>
+          <article class="feature"><span class="feature-icon">◇</span><h3>Mutual value, visible</h3><p>Evidence-led offer ↔ ask suggestions. No inferred acceptance or silent introductions.</p></article>
+          <article class="feature"><span class="feature-icon">↗</span><h3>From intent to action</h3><p>Owner, deadline, next step, source evidence and consent-aware collaboration paths.</p></article>
+        </div>
+      </section>
+
+      <section class="view" data-screen="pipeline" hidden>
+        <div class="page-head"><div><span class="section-kicker">01 / EXECUTION PIPELINE</span><h1>Opportunity pipeline<span class="period">.</span></h1><p>Real source cases, explicit ownership and decisions. Changes write back to canonical PostgreSQL.</p></div><button class="button button-primary" data-view="apply" type="button">＋ Receive opportunity</button></div>
+        <div class="filterbar">
+          <label class="searchbox"><span aria-hidden="true">⌕</span><input id="caseSearch" type="search" placeholder="Search cases, people, organizations…" aria-label="Search cases"></label>
+          <select id="ventureFilter" aria-label="Filter by venture"><option value="">All ventures</option></select>
+          <select id="stageFilter" aria-label="Filter by stage"><option value="">All stages</option><option>NEW</option><option>QUALIFYING</option><option>ROUTED</option><option>ENGAGED</option><option>NEGOTIATING</option><option>PILOT</option><option>WON</option><option>LOST</option><option>ARCHIVED</option></select>
+          <span class="filter-count" id="filterCount">— cases</span>
+        </div>
+        <div class="panel table-panel">
+          <div class="table-scroll"><table class="case-table">
+            <thead><tr><th>OPPORTUNITY</th><th>PERSON / ORGANIZATION</th><th>VENTURE</th><th>STAGE</th><th>OWNER / NEXT ACTION</th><th>PRIORITY</th></tr></thead>
+            <tbody id="casesTable"><tr><td colspan="6" class="table-empty">Unlock the Founder workspace to view real cases.</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="pagination"><button class="button button-quiet" id="prevPage" type="button">← Newer</button><span id="pageIndicator">Source pagination</span><button class="button button-quiet" id="nextPage" type="button">Older →</button></div>
+      </section>
+
+      <section class="view" data-screen="relationships" hidden>
+        <div class="page-head"><div><span class="section-kicker">02 / RELATIONSHIP INTELLIGENCE</span><h1>Connections become <em>context.</em></h1><p>Source-linked people and organizations with multiple roles and longitudinal history — not name-based identity merging.</p></div></div>
+        <div class="relationship-layout">
+          <section class="panel list-panel"><div class="panel-heading"><div><span class="section-kicker">SELECT A SOURCE</span><h3>People & cases</h3></div></div><div class="record-picker" id="relationshipPicker"><p class="empty-line">Unlock to explore source records.</p></div></section>
+          <section class="panel graph-panel"><div class="panel-heading"><div><span class="section-kicker">SOURCE-BASED RELATIONSHIP GRAPH</span><h3 id="graphTitle">Relationship explorer</h3></div><span class="small-chip">EVIDENCE LED</span></div>
+            <div class="relationship-visual" id="graphVisual"><div class="empty-illustration">◎<p>Select a case to inspect the contact’s submitted opportunities and affiliations.</p></div></div>
+            <div class="timeline" id="relationshipTimeline"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" data-screen="matching" hidden>
+        <div class="page-head"><div><span class="section-kicker">03 / RECIPROCAL VALUE ENGINE</span><h1>Better together<span class="period">.</span></h1><p>Two-way offer ↔ ask alignment, grounded in voluntarily submitted source fields. Suggestions are not introductions.</p></div><span class="outlined-tag">SCOPED TO SAME VENTURE</span></div>
+        <div class="match-summary"><span class="match-diamond">◇</span><div><strong id="matchCount">—</strong><span>candidate alignments from up to 100 recent consenting cases</span></div><span class="match-proof">ZERO AUTO-INTRODUCTIONS</span></div>
+        <div class="matches-grid" id="matchesList"><div class="empty-illustration">◇<p>Unlock to calculate real candidate matches. No sample profiles or synthetic matches.</p></div></div>
+      </section>
+
+      <section class="view" data-screen="execution" hidden>
+        <div class="page-head"><div><span class="section-kicker">04 / FOLLOW-THROUGH</span><h1>Keep momentum<span class="period">.</span></h1><p>Human-owned due dates, research notes, source-backed actions and prepared collaboration invitations.</p></div></div>
+        <div class="two-column">
+          <section class="panel"><div class="panel-heading"><div><span class="section-kicker">NEEDS ATTENTION</span><h3>Upcoming & overdue</h3></div><span class="small-chip">FROM SOURCE</span></div><div class="task-list" id="dueList"><p class="empty-line">Unlock to view actual due dates.</p></div></section>
+          <section class="panel"><div class="panel-heading"><div><span class="section-kicker">EXECUTION BOUNDARIES</span><h3>Human and AI collaboration</h3></div></div>
+            <div class="boundary-list">
+              <div><span class="boundary-icon">01</span><div><strong>Qualify</strong><p>Attach research findings and original evidence; source-reported until verified.</p></div></div>
+              <div><span class="boundary-icon">02</span><div><strong>Confirm participation</strong><p>Prepare an opt-in invitation; track the token-holder's actual acceptance or decline.</p></div></div>
+              <div><span class="boundary-icon">03</span><div><strong>Assign scoped work</strong><p>Use existing Company OS and WorkforceOS authority. A draft workpacket is never a dispatched task.</p></div></div>
+              <div><span class="boundary-icon">04</span><div><strong>Verify outcomes</strong><p>Independent receipts for completed work, signed agreements and cash. No inferred success.</p></div></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" data-screen="revenue" hidden>
+        <div class="page-head"><div><span class="section-kicker">05 / COMMERCIAL INTELLIGENCE</span><h1>Revenue is a receipt<span class="period">.</span></h1><p>Separate proposals and source-reported pipeline stages from actual independently confirmed payments.</p></div></div>
+        <div class="stat-grid revenue-stats">
+          <article class="stat"><div class="stat-head"><span>SOURCE-REPORTED WON</span><span class="stat-icon">✓</span></div><strong id="wonCount">—</strong><div class="stat-footer">Stage count, not paid deals</div></article>
+          <article class="stat"><div class="stat-head"><span>OPEN / QUALIFYING</span><span class="stat-icon">◷</span></div><strong id="openCount">—</strong><div class="stat-footer">Human pipeline state only</div></article>
+          <article class="stat"><div class="stat-head"><span>COLLECTED CASH</span><span class="stat-icon">◈</span></div><strong>—</strong><div class="stat-footer">No verified payment connector</div></article>
+          <article class="stat"><div class="stat-head"><span>CONFIRMED REFERRAL FEES</span><span class="stat-icon">↗</span></div><strong>—</strong><div class="stat-footer">No financial settlement receipt</div></article>
+        </div>
+        <div class="panel revenue-panel"><span class="tag tag-honest">EVIDENCE STANDARD</span><h2>Proposals are possibilities.<br><em>Deposits are facts.</em></h2><p>Opportunity OS reports no collected revenue without direct confirmation from a real Stripe or bank transaction source and an authorized attribution link to the original opportunity. This prevents vanity conversion numbers from masking real cash flow.</p><button class="button button-quiet" data-view="pipeline" type="button">Inspect real opportunities ↗</button></div>
+      </section>
+
+      <section class="view" data-screen="apply" hidden>
+        <div class="page-head"><div><span class="section-kicker">06 / PUBLIC OPPORTUNITY INTAKE</span><h1>Something worth <em>building together?</em></h1><p>Share what you offer, what you need and the next step. Every valid submission receives an actual canonical Noetfield case reference.</p></div></div>
+        <div class="intake-layout"><aside class="intake-side">
+          <div class="intake-symbol">✳</div><h2>One introduction.<br>Many possibilities.</h2>
+          <p>Commercial relationships, investment, talent, joint ventures, ecosystem collaboration and technical projects — all have a considered path in.</p>
+          <div class="intake-guides"><div><span>01</span> Tell us the intention</div><div><span>02</span> Define the value exchange</div><div><span>03</span> Provide a contact</div></div>
+          <p class="intake-note">No account required. No automated mass outreach. Independent ventures retain their own boundaries.</p>
+        </aside>
+        <section class="intake-card">
+          <div class="step-nav" aria-label="Intake progress"><span class="step-dot active" data-step-dot="0">01 <small>INTENT</small></span><span class="step-dot" data-step-dot="1">02 <small>VALUE</small></span><span class="step-dot" data-step-dot="2">03 <small>CONTACT</small></span></div>
+          <form id="intakeForm" novalidate>
+            <fieldset class="form-step" data-form-step="0">
+              <legend>Where could we create value?</legend>
+              <p class="field-description">Choose the closest fit. We can connect several opportunities to the same person.</p>
+              <label class="form-field">Opportunity type <select name="kind" required><option value="">Choose one</option><option value="business">Customer / paid pilot</option><option value="growth">GTM / referrals / distribution</option><option value="partnership">Strategic partnership / integration</option><option value="capital">Investor / funding / introductions</option><option value="people">Founder / advisor / human or AI talent</option><option value="events">Programs / grants / events / awards</option><option value="other">Other collaborative opportunity</option></select></label>
+              <label class="form-field">Most relevant venture <select name="initiative" required><option value="">Choose one</option><option value="noetfield">Noetfield / business and AI systems</option><option value="portfolio">Cross-portfolio, not yet scoped</option><option value="workforce">WorkforceOS / human + AI workforce</option><option value="sourcea">SourceA / governed execution</option><option value="outboundos">OutboundOS / sales operations</option><option value="buildworkflow">BuildWorkflow / construction</option><option value="buildrelay">BuildRelay / independent founder network</option><option value="signalforge">SignalForge / market intelligence</option><option value="earnloop">Earnloop / rewards and offers</option><option value="misenorth">MiseNorth / restaurants</option><option value="interiormatch">InteriorMatch / design matching</option><option value="trustfield">TrustField / independent venture</option><option value="other">Other / not sure</option></select></label>
+              <label class="form-field">Your role <select name="role" required><option value="">Choose one</option><option value="founder">Founder or cofounder</option><option value="customer">Customer or buyer</option><option value="partner">Business or channel partner</option><option value="investor">Investor or connector</option><option value="advisor">Advisor or specialist</option><option value="human_contributor">Human collaborator</option><option value="ai_operator">AI agent/tool operator</option><option value="organizer">Program/event organizer</option><option value="other">Other / multiple roles</option></select></label>
+              <div class="step-buttons"><span></span><button class="button button-primary" data-next-step type="button">Continue to value <span>→</span></button></div>
+            </fieldset>
+            <fieldset class="form-step" data-form-step="1" hidden>
+              <legend>What is the opportunity?</legend>
+              <p class="field-description">Specific opportunities create better, faster matches.</p>
+              <label class="form-field">Short title <input name="title" required minlength="4" maxlength="160" placeholder="One clear line about your proposal"></label>
+              <label class="form-field">Proposal and context <textarea name="description" required minlength="30" maxlength="3500" rows="5" placeholder="What are you proposing? Why now? What would success look like?"></textarea></label>
+              <div class="form-row"><label class="form-field">What can you offer? <textarea name="offer" maxlength="1200" rows="3" placeholder="Distribution, customers, skills, funding, introductions…"></textarea></label><label class="form-field">What do you need? <textarea name="ask" maxlength="1200" rows="3" placeholder="A pilot, introductions, teammates, capital…"></textarea></label></div>
+              <div class="form-row"><label class="form-field">Source / referral <select name="source"><option value="direct">Direct</option><option value="linkedin">LinkedIn</option><option value="referral">Referral</option><option value="email">Email</option><option value="event">Event</option><option value="website">Website</option><option value="community">Community</option><option value="other">Other</option></select></label><label class="form-field">Relevant deadline <input type="date" name="deadline"></label></div>
+              <label class="form-field">Website / proposal URL <input name="reference_url" maxlength="700" type="url" placeholder="https://"></label>
+              <label class="form-field">Commercial terms (optional) <textarea name="terms" maxlength="1200" rows="2" placeholder="Budget, fees, revenue share, investment size or expectations"></textarea></label>
+              <div class="step-buttons"><button class="button button-quiet" data-prev-step type="button">← Back</button><button class="button button-primary" data-next-step type="button">Continue to contact <span>→</span></button></div>
+            </fieldset>
+            <fieldset class="form-step" data-form-step="2" hidden>
+              <legend>How can we reach you?</legend>
+              <p class="field-description">Your details are attached to the canonical source case. No automatic cross-venture sharing.</p>
+              <div class="form-row"><label class="form-field">Full name <input name="name" required minlength="2" maxlength="120" autocomplete="name"></label><label class="form-field">Email address <input name="email" required type="email" maxlength="254" autocomplete="email"></label></div>
+              <label class="form-field">Organization, fund or community <input name="organization" required maxlength="200" autocomplete="organization" placeholder="Your organization"></label>
+              <label class="consent-field"><input type="checkbox" name="consent" required><span>I agree to be contacted about this specific proposal. Sharing with other independent ventures or making introductions to third parties requires separate permission. <a href="https://www.noetfield.com/privacy/" target="_blank" rel="noopener noreferrer">Privacy policy ↗</a></span></label>
+              <input class="honeypot" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" type="text">
+              <div class="step-buttons"><button class="button button-quiet" data-prev-step type="button">← Back</button><button class="button button-primary" id="submitIntake" type="submit">Submit opportunity <span>↗</span></button></div>
+            </fieldset>
+          </form>
+          <div class="intake-success" id="intakeSuccess" hidden><span class="success-symbol">✓</span><span class="section-kicker">CANONICAL SOURCE RECEIPT</span><h2>Opportunity recorded.</h2><p>Your submission is persisted in the existing Noetfield Platform database. A real owner will review it.</p><div class="receipt-id" id="receiptId">—</div><p class="small">This is a submission receipt, not an accepted meeting, contract or payment.</p><button class="button button-primary" id="resetIntake" type="button">Submit another opportunity</button></div>
+        </section></div>
+      </section>
+
+      <section class="view" data-screen="systems" hidden>
+        <div class="page-head"><div><span class="section-kicker">07 / ORCHESTRATION LAYER</span><h1>One system. <em>Connected teams.</em></h1><p>Discover infrastructure availability without confusing reachable services with completed autonomous execution.</p></div><button class="button button-quiet" id="checkSystems" type="button">↻ Recheck connections</button></div>
+        <div class="system-grid">
+          <article class="panel system-card"><span class="system-icon">▦</span><span class="section-kicker">SOURCE / CANONICAL</span><h3>Noetfield Platform</h3><p>Public intake, PostgreSQL source cases, operator events and relationship graph. The sole record of incoming Connect proposals.</p><div class="system-foot"><span class="system-status" id="platformSystem">Checking connectivity</span><a href="https://platform.noetfield.com/api/intake/health" target="_blank" rel="noopener noreferrer">View health ↗</a></div></article>
+          <article class="panel system-card"><span class="system-icon">⌘</span><span class="section-kicker">OPS / EXISTING WORKFORCE</span><h3>Business OS Core</h3><p>Existing specialist routing and task workflows consume Noetfield Platform intake. Health reachability alone does not prove a specific case was dispatched.</p><div class="system-foot"><span class="system-status" id="companySystem">Checking connectivity</span><a href="https://business-os-core-production.up.railway.app/health" target="_blank" rel="noopener noreferrer">View health ↗</a></div></article>
+          <article class="panel system-card"><span class="system-icon">◇</span><span class="section-kicker">COLLABORATION / SCOPED</span><h3>WorkforceOS + BuildRelay</h3><p>Human/AI collaborators and independent founder networks. This application prepares cases and consent proposals; cross-system dispatch requires explicit authorization.</p><div class="system-foot"><span class="system-status">NOT AUTO-DISPATCHED</span><span class="small">Scoped adapter boundary</span></div></article>
+          <article class="panel system-card"><span class="system-icon">◈</span><span class="section-kicker">COMMERCIAL / EVIDENCE</span><h3>Stripe / banking receipts</h3><p>Payment and contract attribution are unconnected here. Pipeline estimates never enter the collected-cash metric.</p><div class="system-foot"><span class="system-status">NOT YET VERIFIED</span><span class="small">No fabricated cash</span></div></article>
+        </div>
+        <div class="system-footer-note">LIVE MONITORING · Read-only health checks. No secrets disclosed; no actual workforce permissions granted by this panel.</div>
+      </section>
+
+      <footer class="footer"><span>OPPORTUNITY OS <span class="footer-sep">/</span> A NOETFIELD OPERATING SURFACE</span><span>Evidence before claims. Reciprocity before extraction. <span class="footer-sep">© 2026</span></span></footer>
+    </main>
+  </div>
+</div>
+
+<dialog class="case-dialog" id="caseDialog" aria-labelledby="dialogTitle">
+  <div class="dialog-header"><div><span class="section-kicker">CANONICAL SOURCE RECORD</span><h2 id="dialogTitle">Opportunity</h2><span class="dialog-id" id="dialogId">—</span></div><button class="dialog-close" id="closeDialog" type="button" aria-label="Close opportunity">×</button></div>
+  <div class="dialog-scroll">
+    <div id="caseDetail"></div>
+    <div class="dialog-section"><span class="section-kicker">ACTUAL OWNER & NEXT ACTION</span><h3>Move work forward.</h3>
+      <form id="caseUpdateForm" class="dialog-form">
+        <div class="form-row"><label class="form-field">Stage <select name="stage"><option>NEW</option><option>QUALIFYING</option><option>ROUTED</option><option>ENGAGED</option><option>NEGOTIATING</option><option>PILOT</option><option>WON</option><option>LOST</option><option>ARCHIVED</option></select></label><label class="form-field">Human owner <input name="owner" maxlength="100" placeholder="Actual responsible person"></label></div>
+        <label class="form-field">Next action <input name="next_action" maxlength="500" placeholder="One accountable concrete step"></label>
+        <label class="form-field">Due date <input name="due_date" type="date"></label>
+        <label class="form-field">Decision note (required for Won/Lost) <textarea name="note" maxlength="800" rows="2"></textarea></label>
+        <button class="button button-primary" type="submit">Save canonical case ↗</button>
+      </form>
+    </div>
+    <div class="dialog-section"><span class="section-kicker">INTERACTION TIMELINE</span><h3>Record what actually happened.</h3>
+      <form id="activityForm" class="dialog-form">
+        <label class="form-field">Activity type <select name="action"><option value="qualification">Qualification</option><option value="research_note">Research note</option><option value="interaction_observed">Observed interaction</option><option value="draft_prepared">Draft prepared — not sent</option><option value="followup_planned">Follow-up planned</option><option value="intro_proposed">Introduction proposed</option><option value="matching_proposed">Matching proposed</option><option value="human_feedback">Human feedback</option><option value="external_source_reference">External source reference</option><option value="workpacket_proposed">Workpacket proposed — not dispatched</option></select></label>
+        <label class="form-field">Observation <textarea name="body" minlength="3" maxlength="2200" required rows="3" placeholder="Include what is known, what is unverified and the evidence."></textarea></label>
+        <label class="form-field">Evidence URL (optional) <input name="evidence_url" type="url" placeholder="https://" maxlength="700"></label>
+        <button class="button button-quiet" type="submit">＋ Record source activity</button>
+      </form>
+      <div class="activity-history" id="dialogActivity"></div>
+    </div>
+    <div class="dialog-section"><span class="section-kicker">CONSENT-AWARE COLLABORATION</span><h3>Invite, don't assume.</h3><p class="small">Create a scoped private invitation link. It is not sent automatically. Actual acceptance belongs to its token holder.</p>
+      <form id="inviteForm" class="dialog-form">
+        <label class="form-field">Invitation scope <select name="scope"><option value="collaboration">Collaboration</option><option value="introduction">Introduction</option><option value="trial">Scoped trial</option><option value="specialist_review">Specialist review</option><option value="partner">Partner discussion</option></select></label>
+        <label class="form-field">Scope & value exchange <textarea name="message" required minlength="15" maxlength="1500" rows="3" placeholder="Define the proposed collaboration and who benefits."></textarea></label>
+        <button class="button button-primary" type="submit">Prepare opt-in invitation</button>
+      </form>
+      <div id="invitationResult" class="invite-result" hidden></div>
+      <div id="dialogInvitations" class="activity-history"></div>
+    </div>
+  </div>
+</dialog>
+
+<div class="unlock-backdrop" id="unlockBackdrop">
+  <section class="unlock-card" aria-labelledby="unlockTitle">
+    <div class="unlock-top"><span class="mini-brand"><span class="mini-diamond">✳</span> OPPORTUNITY OS</span><span class="small-chip">FOUNDER ACCESS</span></div>
+    <div class="unlock-symbol">◇</div>
+    <span class="section-kicker">CONTROL YOUR RELATIONSHIPS</span>
+    <h2 id="unlockTitle">A clearer view of<br><em>what could happen next.</em></h2>
+    <p>Unlock the private workspace with your existing Noetfield Platform administrator key. Nothing is stored in the browser or this app.</p>
+    <form id="unlockForm"><label class="form-field">Platform operator key <input type="password" id="operatorKey" minlength="8" maxlength="256" required autocomplete="off" placeholder="Enter your existing platform credential"></label><button class="button button-primary unlock-submit" type="submit">Enter workspace <span>↗</span></button></form>
+    <div class="unlock-divider"><span>or</span></div>
+    <button class="button button-secondary full" data-view="apply" id="publicApply" type="button">Submit a public opportunity ↗</button>
+    <p class="unlock-caption">Protected source cases require server-side Platform authentication. No demo leads. No phantom bookings. No claimed revenue.</p>
+  </section>
+</div>
+</body></html>
