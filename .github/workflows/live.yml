@@ -1,0 +1,21 @@
+name: Opportunity OS live production source check
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/live-smoke.mjs'
+      - '.github/workflows/live.yml'
+permissions:
+  contents: read
+jobs:
+  live-source-receipt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify real public website, protected API and existing source services
+        run: node scripts/live-smoke.mjs
