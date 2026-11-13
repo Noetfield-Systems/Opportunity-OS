@@ -213,3 +213,30 @@ test("real Company OS specialist task is founder-authorized, source-scoped, read
     "Do not copy a contact's PII into a task objective");
  });
 });
+
+
+test("actual HTTP Action Desk reads authenticated source cases; shares only canonical intake links",async()=>{
+ await fixture(async({base})=>{
+  const missing=await req(base,"/api/operator/action-queue");
+  assert.equal(missing.status,401);
+  const wrong=await req(base,"/api/operator/action-queue",{key:"incorrect-credential"});
+  assert.equal(wrong.status,403);
+  const now=await req(base,"/api/operator/action-queue?limit=2&offset=0",{key:"fixture-key-123456"});
+  assert.equal(now.status,200);
+  assert.equal(now.data.schema,"noetfield.opportunity-os.action-queue.v1");
+  assert.equal(now.data.source,"CANONICAL_PLATFORM_INTAKE");
+  assert.equal(now.data.source_total,3);
+  assert.equal(now.data.source_limit,2);
+  assert.ok(now.data.items.some(row=>row.intake_id==="INT-ABCDEF123456"));
+  assert.equal(now.data.verified_revenue,null);
+  for(const row of now.data.items){
+   assert.equal(row.external_message_sent,false);
+   if(row.draft){assert.equal(row.draft.mode,"DRAFT_NOT_SENT")}
+  }
+  const share=await req(base,"/api/share-links");
+  assert.equal(share.status,200);
+  assert.equal(share.data.links.length,6);
+  assert.ok(share.data.links.every(x=>x.url.startsWith("https://www.noetfield.com/connect/?type=")));
+  assert.equal(share.data.no_external_send,true);
+ });
+});
