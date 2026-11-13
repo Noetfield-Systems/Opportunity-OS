@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
+import { makeActionQueue, sourceShareLinks } from "./action_engine.mjs";
 
 const ROOT=path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC=path.join(ROOT,"public");
@@ -281,6 +282,11 @@ export function createApp({platformBase=process.env.PLATFORM_API_BASE||"https://
       execution_link:"EXISTING_PLATFORM_INTAKE_SYNC_NOT_VERIFIED_BY_THIS_PROBE"},
      autonomous_execution:"NOT_VERIFIED",collected_revenue:null});
    }
+   if(req.method==="GET"&&p==="/api/share-links"){
+    rateLimit(req,"share-links",90,60000);
+    return reply(res,200,{source:"CANONICAL_NOETFIELD_CONNECT",
+      no_external_send:true,links:sourceShareLinks()});
+   }
    if(req.method==="POST"&&p==="/api/intake"){
     rateLimit(req,"public-intake",12,60000);
     const submitted=validatePublicIntake(await jsonBody(req,12000));
@@ -299,6 +305,15 @@ export function createApp({platformBase=process.env.PLATFORM_API_BASE||"https://
      const offset=int(url.searchParams.get("offset"),0,10000,0);
      const data=await upstream(platform,"/api/opportunities/desk/page?limit="+limit+"&offset="+offset,{secret});
      return reply(res,200,data);
+    }
+    if(req.method==="GET"&&p==="/api/operator/action-queue"){
+     const limit=int(url.searchParams.get("limit"),1,100,100);
+     const offset=int(url.searchParams.get("offset"),0,10000,0);
+     const data=await upstream(platform,
+       "/api/opportunities/desk/page?limit="+limit+"&offset="+offset,{secret});
+     const queue=makeActionQueue(data.items||[],{limit});
+     return reply(res,200,{...queue,source_total:data.total||0,
+       source_limit:limit,source_offset:offset});
     }
     if(req.method==="GET"&&p==="/api/operator/matches"){
      const data=await upstream(platform,"/api/opportunities/desk/page?limit=100&offset=0",{secret});

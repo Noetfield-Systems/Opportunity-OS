@@ -125,3 +125,78 @@ test("Founder dispatches bounded specialist via real UI and sees verified task r
  expect(backlink.body).toContain("task_real_fixture_001");
  await expect(page.locator('#dispatchForm input[name="company_token"]')).toHaveValue("");
 });
+
+
+test("Next Action Desk: real source priority → planned due date → reviewed unsent reply",async({page})=>{
+ const row={
+  intake_id:"INT-REVENUE01001",person:"Alex Rivera",organization:"Example Operations",
+  email:"alex@example.invalid",initiative:"noetfield",opportunity_type:"business",
+  title:"Paid workflow pilot",proposal:"Source case describing a paid B2B workflow pilot",
+  stage:"NEW",owner:"",next_action:"",next_action_due:null,revision:0,
+  offer:"Existing operational process",ask:"One scoped paid workflow pilot",
+  consent_contact:true,priority_score:86,received_at:"2026-11-01T12:00:00.000Z",
+  interactions:[],activity:[],invitations:[],
+ };
+ const item={
+  intake_id:row.intake_id,person:row.person,organization:row.organization,
+  title:row.title,initiative:"noetfield",stage:"NEW",
+  priority:97,urgency:"NEEDS_TRIAGE",
+  next_action:"Clarify the buyer, budget and one paid pilot outcome",
+  recommended_due_date:"2026-11-13",recorded_due_date:null,
+  owner:null,lane:"Customer / pilot",consent_contact:true,
+  reasons:["New submission needs review","No accountable owner assigned"],
+  draft:{
+   subject:"Re: Paid workflow pilot",
+   body:"Hi Alex,\n\nThanks for reaching out about a paid pilot. Please share your budget and target outcome.\n\nBest,\n[Your name]",
+   mode:"DRAFT_NOT_SENT",external_message_sent:false
+  }
+ };
+ let changed=null,activity=null;
+ await page.route("**/api/system",r=>r.fulfill({json:{
+  platform:{reachable:true,storage:"postgres"},company_os:{reachable:true}}}));
+ await page.route("**/api/operator/cases?**",r=>r.fulfill({json:{
+  items:[row],total:1,limit:100,offset:0}}));
+ await page.route("**/api/operator/action-queue?**",r=>r.fulfill({json:{
+  items:[item],source_total:1,count:1,source_case_count:1,
+  action_now_count:0,needs_owner_count:row.owner?0:1,contactable_count:1}}));
+ await page.route("**/api/operator/matches",r=>r.fulfill({json:{matches:[]}}));
+ await page.route("**/api/share-links",r=>r.fulfill({json:{
+  links:[{name:"Customer & paid pilots",url:"https://www.noetfield.com/connect/?type=business&source=linkedin"}]}}));
+ await page.route("**/api/operator/cases/INT-REVENUE01001",async r=>{
+  changed=JSON.parse(r.request().postData());
+  row.owner=changed.owner;row.next_action=changed.next_action;
+  row.next_action_due=changed.due_date;row.revision++;
+  await r.fulfill({json:{persisted:true,state:{revision:row.revision}}});
+ });
+ await page.route("**/api/operator/cases/INT-REVENUE01001/activity",async r=>{
+  activity=JSON.parse(r.request().postData());
+  row.revision++;
+  await r.fulfill({json:{persisted:true,state:{revision:row.revision},independently_verified:false}});
+ });
+ await page.goto("/");
+ await page.locator("#operatorKey").fill("fixture-operator-key");
+ await page.locator("#unlockForm button[type=submit]").click();
+ await expect(page.locator("#unlockBackdrop")).toBeHidden();
+ await expect(page.locator("#overviewActions")).toContainText("Paid workflow pilot");
+ await page.locator('.nav-item[data-view="execution"]').click();
+ await expect(page.locator("#actionQueueList")).toContainText("Paid workflow pilot");
+ await expect(page.locator("#actionQueueList")).toContainText("No accountable owner assigned");
+ await expect(page.locator("#shareLinks")).toContainText("Customer & paid pilots");
+ await expect(page.locator(".share-link-card")).toHaveAttribute("data-copy-share",
+  "https://www.noetfield.com/connect/?type=business&source=linkedin");
+ await page.locator('[data-set-plan="INT-REVENUE01001"]').click();
+ await expect.poll(()=>changed).not.toBeNull();
+ expect(changed.owner).toBe("Founder");
+ expect(changed.stage).toBe("NEW");
+ expect(changed.next_action).toMatch(/buyer/);
+ expect(changed.due_date).toBe("2026-11-13");
+ await page.locator("#actionQueueList [data-case='INT-REVENUE01001']").click();
+ await expect(page.locator("#caseDialog")).toBeVisible();
+ await expect(page.locator("#replyPreview")).toContainText("paid pilot");
+ await expect(page.locator("#replyPreview")).toContainText("DRAFT ONLY");
+ await page.locator("#logDraft").click();
+ await expect.poll(()=>activity).not.toBeNull();
+ expect(activity.action).toBe("draft_prepared");
+ expect(activity.body).toContain("NOT SENT");
+ expect(activity.expected_revision).toBe(1);
+});
