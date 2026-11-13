@@ -324,11 +324,12 @@
       </form>
       <div class="invite-result" id="dispatchResult" hidden></div>
     </div>
-    <div class="dialog-section"><span class="section-kicker">CONSENT-AWARE COLLABORATION</span><h3>Invite, don't assume.</h3><p class="small">Create a scoped private invitation link. It is not sent automatically. Actual acceptance belongs to its token holder.</p>
+    <div class="dialog-section"><span class="section-kicker">CONSENT-AWARE COLLABORATION</span><h3>Invite, don't assume.</h3><p class="small">Prepare a scoped private invitation or explicitly email the original consenting contact via Resend. Provider acceptance is not recipient delivery or collaboration acceptance.</p>
       <form id="inviteForm" class="dialog-form">
         <label class="form-field">Invitation scope <select name="scope"><option value="collaboration">Collaboration</option><option value="introduction">Introduction</option><option value="trial">Scoped trial</option><option value="specialist_review">Specialist review</option><option value="partner">Partner discussion</option></select></label>
         <label class="form-field">Scope & value exchange <textarea name="message" required minlength="15" maxlength="1500" rows="3" placeholder="Define the proposed collaboration and who benefits."></textarea></label>
-        <button class="button button-primary" type="submit">Prepare opt-in invitation</button>
+        <button class="button button-primary" type="submit" name="delivery" value="prepare">Prepare opt-in invitation</button>
+        <button class="button button-quiet" type="submit" name="delivery" value="send">Email original consented contact via Resend ↗</button>
       </form>
       <div id="invitationResult" class="invite-result" hidden></div>
       <div id="dialogInvitations" class="activity-history"></div>
