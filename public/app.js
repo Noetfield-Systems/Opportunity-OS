@@ -1,7 +1,7 @@
 /* Opportunity OS — source-backed, consent-aware frontend. No stored credentials. */
 (()=>{"use strict";
 const $=id=>document.getElementById(id);
-const state={key:"",authenticated:false,cases:[],total:0,offset:0,limit:100,matches:[],
+const state={key:"",authenticated:false,cases:[],total:0,offset:0,limit:100,matches:[],actions:null,shareLinks:[],
  selected:null,graph:null,view:"overview",step:0,requestId:"",busy:false};
 const VENTURES={noetfield:"Noetfield",portfolio:"Cross-portfolio",workforce:"WorkforceOS",
  sourcea:"SourceA",outboundos:"OutboundOS",buildworkflow:"BuildWorkflow",buildrelay:"BuildRelay",
@@ -35,7 +35,7 @@ function showView(view){
  document.querySelectorAll("[data-screen]").forEach(el=>el.hidden=el.dataset.screen!==view);
  document.querySelectorAll(".nav-item").forEach(el=>{const active=el.dataset.view===view;el.classList.toggle("active",active);el.setAttribute("aria-current",active?"page":"false")});
  const label={overview:"Overview",pipeline:"Opportunity pipeline",relationships:"Relationship graph",matching:"Reciprocal matching",
-  execution:"Follow-up & execution",revenue:"Commercial outcomes",apply:"Submit opportunity",systems:"Connected systems"}[view];
+  execution:"Next Action Desk",revenue:"Commercial outcomes",apply:"Submit opportunity",systems:"Connected systems"}[view];
  text("currentViewLabel",label);
  document.title=label+" — Opportunity OS";
  $("sidebar").classList.remove("open");$("menuButton").setAttribute("aria-expanded","false");
@@ -43,7 +43,7 @@ function showView(view){
  window.scrollTo({top:0,behavior:"instant"});
 }
 function setLocked(){
- state.authenticated=false;state.key="";state.cases=[];state.total=0;state.matches=[];state.selected=null;state.graph=null;
+ state.authenticated=false;state.key="";state.cases=[];state.total=0;state.matches=[];state.actions=null;state.selected=null;state.graph=null;
  $("unlockBackdrop").hidden=state.view==="apply";
  $("lockButton").hidden=true;
  $("operatorKey").value="";$("intakeSuccess").hidden=true;
@@ -60,6 +60,7 @@ async function login(ev){
   $("operatorKey").value="";
   toast("Authenticated against the canonical Noetfield Platform.");
   loadMatches().catch(e=>toast("Matching is unavailable: "+e.message,true));
+  loadActionQueue().catch(e=>toast("Action queue unavailable: "+e.message,true));
  }catch(error){state.key="";toast("Unlock failed: "+error.message,true)}
  finally{state.busy=false;btn.disabled=false;btn.textContent="Enter workspace ↗"}
 }
@@ -78,8 +79,143 @@ async function loadMatches(){
 }
 function renderAll(){
  renderStats();renderFlow();renderPriority();renderCases();renderRelationshipPicker();renderDue();
- renderRevenue();renderMatches();
+ renderRevenue();renderMatches();renderActionDesk();
 }
+
+async function loadActionQueue(){
+ if(!state.key)return;
+ const data=await call("/api/operator/action-queue?limit="+state.limit+"&offset="+state.offset);
+ if(!Array.isArray(data.items))throw Error("Action Desk did not return source cases");
+ state.actions=data;renderActionDesk();
+ if($("caseDialog").open){
+  const current=state.cases.find(c=>c.intake_id===state.selected);
+  if(current)renderReplyPreview(current);
+ }
+}
+function renderActionDesk(){
+ const root=$("actionQueueList"),preview=$("overviewActions");
+ if(!state.key){
+  text("actionNowCount","—");text("unassignedCount","—");text("contactableCount","—");
+  root.innerHTML='<p class="empty-line">Unlock to load source-backed priority cases.</p>';
+  preview.innerHTML='<p class="empty-line">Unlock to see the best next actions.</p>';
+  return;
+ }
+ if(!state.actions){
+  root.innerHTML='<p class="empty-line">Checking the source action queue…</p>';
+  preview.innerHTML='<p class="empty-line">Loading priority recommendations…</p>';
+  return;
+ }
+ const action=state.actions,rows=action.items||[];
+ text("actionNowCount",action.action_now_count);
+ text("unassignedCount",action.needs_owner_count);
+ text("contactableCount",action.contactable_count);
+ preview.innerHTML=rows.length?rows.slice(0,3).map(x=>
+  '<button class="preview-action" type="button" data-case="'+h(x.intake_id)+'"><strong>'+h(x.title)+'</strong>'+
+  '<span>'+h(x.person||"Unassigned source contact")+' · '+h(labelVenture(x.initiative))+'</span>'+
+  '<small>'+h(x.reasons?.[0]||"Source priority")+'</small></button>').join(""):
+  '<p class="empty-line">No open source opportunities on the current page.</p>';
+ root.innerHTML=rows.length?rows.map(x=>{
+  const reasons=(x.reasons||[]).slice(0,3).map(v=>h(v)).join(" · ");
+  const urgency=x.urgency==="ACT_NOW"?"now":x.urgency==="NEEDS_TRIAGE"?"triage":"normal";
+  return '<article class="action-line" data-action-id="'+h(x.intake_id)+'">'+
+   '<div class="action-rank">'+h(x.priority)+'<small>FIT</small></div>'+
+   '<div class="action-body"><span class="action-urgency '+urgency+'">'+
+    h(x.urgency.replaceAll("_"," "))+' · '+h(x.lane)+'</span>'+
+    '<h4>'+h(x.title)+'</h4>'+
+    '<p class="action-context">'+h(x.person||"Unknown person")+' · '+h(labelVenture(x.initiative))+' · '+h(x.organization||"Organization not supplied")+'</p>'+
+    '<p class="action-basis">'+h(x.next_action)+'</p>'+
+    '<div class="action-meta"><span>'+h(reasons||"Review original case")+'</span>'+
+     '<span>'+(x.recorded_due_date?"Due "+h(x.recorded_due_date):"Suggested follow-up "+h(x.recommended_due_date))+'</span>'+
+     '<span>'+h(x.owner||"No owner")+'</span>'+
+     (x.draft?'<span>Reply draft available, NOT sent</span>':'<span>No recorded contact consent</span>')+
+    '</div></div>'+
+    '<div class="action-buttons">'+
+      '<button type="button" class="button button-primary" data-case="'+h(x.intake_id)+'">Open case ↗</button>'+
+      '<button type="button" class="button button-quiet" data-set-plan="'+h(x.intake_id)+'">Set follow-up</button>'+
+    '</div></article>'
+ }).join(""):'<p class="empty-line">No open source cases on this page.</p>';
+}
+function renderShareLinks(){
+ const el=$("shareLinks");
+ if(!state.shareLinks?.length){
+  el.innerHTML='<p class="empty-line">Canonical invitation routes unavailable.</p>';return;
+ }
+ el.innerHTML=state.shareLinks.map(x=>'<button class="share-link-card" type="button" data-copy-share="'+h(x.url)+'"'+
+   ' aria-label="Copy canonical invitation link for '+h(x.name)+'"><span>'+h(x.name)+'</span><small>Copy link ↗</small></button>').join("");
+}
+async function loadShareLinks(){
+ try{
+  const data=await call("/api/share-links",{auth:false});
+  if(!Array.isArray(data.links))throw Error("No canonical links returned");
+  state.shareLinks=data.links.filter(x=>typeof x.url==="string"&&x.url.startsWith("https://www.noetfield.com/connect/"));
+  renderShareLinks();
+ }catch(error){
+  $("shareLinks").innerHTML='<p class="empty-line">Share routes not confirmed. The canonical intake remains https://www.noetfield.com/connect/</p>';
+ }
+}
+function actionFor(id){return state.actions?.items?.find(x=>x.intake_id===id)||null}
+function renderReplyPreview(x){
+ const panel=$("replyPreview");
+ const item=actionFor(x.intake_id),draft=item?.draft||null;
+ const available=Boolean(draft);
+ $("copyReply").disabled=!available;$("emailReply").disabled=!available;$("logDraft").disabled=!available;
+ if(!available){
+  panel.innerHTML='<p class="empty-line">'+(x.consent_contact?
+    "No eligible source-backed draft on this page; refresh the action queue.":
+    "A contact reply is unavailable until the original source shows contact consent.")+'</p>';
+  return;
+ }
+ panel.innerHTML='<strong>Subject: '+h(draft.subject)+'</strong>'+
+  '<pre>'+h(draft.body)+'</pre>'+
+  '<p class="small">DRAFT ONLY · Human review and signature required · Not sent</p>';
+}
+async function copyText(value){
+ try{await navigator.clipboard.writeText(value);toast("Copied for manual review. Nothing has been sent.");return true}
+ catch{toast("Clipboard unavailable. Copy manually from the source record.",true);return false}
+}
+async function onPlanClick(id){
+ const item=actionFor(id),x=state.cases.find(c=>c.intake_id===id);
+ if(!item||!x){toast("Refresh the source before planning this case.",true);return}
+ if(TERMINAL.has(String(x.stage||"").toUpperCase())){toast("This source case is closed.",true);return}
+ const today=new Date().toISOString().slice(0,10);
+ const note="Next Action Desk: follow-up planned by Founder; no external message sent.";
+ const body={expected_revision:Number(x.revision||0),stage:x.stage||"NEW",
+  owner:x.owner||"Founder",
+  next_action:x.next_action||item.next_action,
+  due_date:x.next_action_due&&x.next_action_due>=today?x.next_action_due:item.recommended_due_date,
+  note};
+ await mutateCase(()=>call("/api/operator/cases/"+encodeURIComponent(id),{method:"PATCH",body}));
+}
+function currentDraft(){
+ const x=selectedCase(),item=actionFor(x.intake_id);
+ if(!item?.draft)throw Error("No consent-backed message available. Refresh the action queue.");
+ return {x,draft:item.draft};
+}
+async function onCopyReply(){
+ try{const {draft}=currentDraft();await copyText("Subject: "+draft.subject+"\n\n"+draft.body)}
+ catch(error){toast(error.message,true)}
+}
+function onEmailReply(){
+ try{
+  const {x,draft}=currentDraft();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x.email||""))throw Error("Missing or invalid source email.");
+  const href="mailto:"+encodeURIComponent(x.email)+"?subject="+encodeURIComponent(draft.subject)+"&body="+encodeURIComponent(draft.body);
+  const a=document.createElement("a");a.href=href;a.click();
+  toast("Email draft opened locally. No message sent or marked as sent.");
+ }catch(error){toast(error.message,true)}
+}
+function onLogDraft(){
+ try{
+  const {x,draft}=currentDraft();
+  const body={expected_revision:Number(x.revision||0),
+    action:"draft_prepared",evidence_url:"",
+    body:"Human reviewed a prepared outreach draft (NOT SENT). Subject: "+
+      draft.subject.slice(0,180)+
+      ". No email delivery, reply, meeting, contract or collected payment is verified."};
+  mutateCase(()=>call("/api/operator/cases/"+encodeURIComponent(x.intake_id)+"/activity",{method:"POST",body}));
+ }catch(error){toast(error.message,true)}
+}
+
 function renderStats(){
  const rows=state.cases,active=rows.filter(x=>!TERMINAL.has(x.stage||"NEW")).length;
  const due=rows.filter(x=>x.next_action_due&&!TERMINAL.has(x.stage||"NEW")
@@ -196,6 +332,7 @@ function renderDialog(x){
  $("dialogInvitations").innerHTML=(x.invitations||[]).map(i=>'<div class="activity-row"><strong>'+h(i.scope||"Invitation")+' · '+h(i.state||"PREPARED")+'</strong><p>'+h(i.id||"")+'</p></div>').join("");
  $("invitationResult").hidden=true;$("invitationResult").replaceChildren();
  $("dispatchResult").hidden=true;$("dispatchResult").replaceChildren();
+ renderReplyPreview(x);
 }
 function openCase(id){
  const found=state.cases.find(x=>x.intake_id===id);
@@ -204,7 +341,7 @@ function openCase(id){
 }
 async function mutateCase(fn){
  if(state.busy)return;state.busy=true;
- try{await fn();await loadCases();if(state.selected){const x=state.cases.find(x=>x.intake_id===state.selected);if(x)renderDialog(x)}toast("Verified Platform write receipt recorded.");}
+ try{await fn();await loadCases();await loadActionQueue();if(state.selected){const x=state.cases.find(x=>x.intake_id===state.selected);if(x)renderDialog(x)}toast("Verified Platform write receipt recorded.");}
  catch(error){toast("Not confirmed: "+error.message+" — refresh source before retrying.",true)}
  finally{state.busy=false}
 }
@@ -369,6 +506,10 @@ async function onSubmitIntake(ev){
  finally{state.busy=false;btn.disabled=false;btn.innerHTML='Submit opportunity <span>↗</span>'}
 }
 function onClickDelegated(ev){
+ const share=ev.target.closest("[data-copy-share]");
+ if(share){copyText(share.dataset.copyShare);return}
+ const plan=ev.target.closest("[data-set-plan]");
+ if(plan){onPlanClick(plan.dataset.setPlan);return}
  const view=ev.target.closest("[data-view]");
  if(view){showView(view.dataset.view);return}
  const source=ev.target.closest("[data-case]");
@@ -385,7 +526,7 @@ $("unlockForm").addEventListener("submit",login);
 $("lockButton").addEventListener("click",()=>{setLocked();toast("Workspace locked. Credential cleared from application memory.")});
 $("refreshButton").addEventListener("click",async()=>{
  if(!state.key){toast("Unlock to refresh private records.");return}
- try{await loadCases();await loadMatches();toast("Canonical source refreshed.")}catch(error){toast("Refresh failed: "+error.message,true)}
+ try{await loadCases();await loadMatches();await loadActionQueue();toast("Canonical source refreshed.")}catch(error){toast("Refresh failed: "+error.message,true)}
 });
 $("closeDialog").addEventListener("click",()=>$("caseDialog").close());
 $("caseDialog").addEventListener("click",ev=>{if(ev.target===$("caseDialog"))$("caseDialog").close()});
@@ -396,9 +537,13 @@ $("dispatchForm").addEventListener("submit",onDispatch);
 $("caseSearch").addEventListener("input",renderCases);
 $("stageFilter").addEventListener("change",renderCases);
 $("ventureFilter").addEventListener("change",renderCases);
-$("prevPage").addEventListener("click",async()=>{state.offset=Math.max(0,state.offset-state.limit);try{await loadCases()}catch(e){toast(e.message,true)}});
-$("nextPage").addEventListener("click",async()=>{state.offset+=state.limit;try{await loadCases()}catch(e){toast(e.message,true)}});
+$("prevPage").addEventListener("click",async()=>{state.offset=Math.max(0,state.offset-state.limit);try{await loadCases();await loadActionQueue()}catch(e){toast(e.message,true)}});
+$("nextPage").addEventListener("click",async()=>{state.offset+=state.limit;try{await loadCases();await loadActionQueue()}catch(e){toast(e.message,true)}});
 $("checkSystems").addEventListener("click",checkSystems);
+$("actionRefresh").addEventListener("click",async()=>{if(!state.key)return toast("Unlock the workspace to refresh actions.");try{await loadCases();await loadActionQueue();toast("Source action queue refreshed.")}catch(e){toast(e.message,true)}});
+$("copyReply").addEventListener("click",onCopyReply);
+$("emailReply").addEventListener("click",onEmailReply);
+$("logDraft").addEventListener("click",onLogDraft);
 $("menuButton").addEventListener("click",()=>{const open=$("sidebar").classList.toggle("open");$("menuButton").setAttribute("aria-expanded",String(open))});
 $("intakeForm").addEventListener("submit",onSubmitIntake);
 document.querySelectorAll("[data-next-step]").forEach(btn=>btn.addEventListener("click",()=>{if(validStep())formStep(state.step+1)}));
@@ -408,5 +553,5 @@ const query=new URLSearchParams(location.search);
 if(query.get("type")){$('select[name="kind"]').value=query.get("type")}
 if(query.get("source")){$('select[name="source"]').value=query.get("source")}
 showView(location.pathname==="/apply"?"apply":"overview");
-formStep(0);renderAll();checkSystems();
+formStep(0);renderAll();checkSystems();loadShareLinks();
 })();
