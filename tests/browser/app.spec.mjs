@@ -11,7 +11,7 @@ test("public intake: three-step consent + genuine source receipt (fixture only)"
  await expect(page.locator("#unlockBackdrop")).toBeHidden();
  await page.locator('[name="kind"]').selectOption("partnership");
  await page.locator('[name="initiative"]').selectOption("noetfield");
- await page.locator('[name="role"]').selectOption("partner");
+ await page.locator('#intakeForm [name="role"]').selectOption("partner");
  await page.locator('[data-form-step="0"] [data-next-step]').click();
  await expect(page.locator('[data-form-step="1"]')).toBeVisible();
  await page.locator('[name="title"]').fill("A focused partner pilot");
