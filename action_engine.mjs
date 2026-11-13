@@ -84,7 +84,7 @@ export function buildReplyDraft(row){
    "Would you be open to sharing a little more detail by email, or a brief introductory call?",
    "",
    "Best,",
-   "Noetfield Team"
+   "[Your name]"
  ].join("\n");
  return {subject,body,mode:"DRAFT_NOT_SENT",source_intake_id:clean(row.intake_id,100),
   contact_permission:"RECORDED_ON_ORIGINAL_SOURCE_CASE",
