@@ -142,6 +142,91 @@ export function createApp({platformBase=process.env.PLATFORM_API_BASE||"https://
  fetcher=globalThis.fetch}={}){
  const platform=platformBase.replace(/\/+$/,"");
  const company=companyBase.replace(/\/+$/,"");
+
+ const dispatchInFlight=new Set();
+ const COMPANY_ROLES=new Set([
+  "sales_qualification","partnerships","market_intelligence",
+  "product_strategy","engineering_operator","chief_of_staff",
+ ]);
+ const COMPANY_BRANDS=new Set(["noetfield","buildworkflow","signalforge"]);
+ async function companyRequest(token,endpoint,method="GET",body=null){
+  if(typeof token!=="string"||token.length<16||token.length>512||
+    /[\r\n]/.test(token))throw new HTTPError(422,"COMPANY_OS_TOKEN_REQUIRED");
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),12000);
+  try{
+   const response=await fetcher(company+endpoint,{
+    method,signal:controller.signal,redirect:"error",
+    headers:{"Accept":"application/json","Authorization":"Bearer "+token,
+      ...(body?{"Content-Type":"application/json"}:{})},
+    ...(body?{body:JSON.stringify(body)}:{}),
+   });
+   let data={};try{data=await response.json()}catch{}
+   if(!response.ok){
+    throw new HTTPError(response.status===401||response.status===403?403:
+      response.status===400||response.status===422?422:503,
+      response.status===401||response.status===403?
+        "COMPANY_OS_FOUNDER_AUTH_FAILED":"COMPANY_OS_SERVICE_REJECTED");
+   }
+   return data;
+  }catch(error){
+   if(error instanceof HTTPError)throw error;
+   throw new HTTPError(503,"COMPANY_OS_REQUEST_UNCONFIRMED");
+  }finally{clearTimeout(timer)}
+ }
+ async function dispatchInternalSpecialist(id,secret,body){
+  const token=body.company_token,role=body.role,mission=body.mission,
+    rid=body.request_id,brand=body.brand;
+  if(!COMPANY_ROLES.has(role)||!COMPANY_BRANDS.has(brand)||
+     typeof mission!=="string"||mission.trim().length<20||mission.length>900||
+     !/^req_[A-Za-z0-9_-]{16,96}$/.test(rid||"")){
+   throw new HTTPError(422,"INVALID_SCOPED_DISPATCH");
+  }
+  const graph=await upstream(platform,"/api/opportunities/desk/"+encodeURIComponent(id)+"/relationship",{secret});
+  const opportunity=Array.isArray(graph.nodes)?
+    graph.nodes.find(n=>n.type==="opportunity"&&n.id===id):null;
+  if(!opportunity)throw new HTTPError(404,"CANONICAL_CASE_NOT_FOUND");
+  // Independent ventures are not delegated through Noetfield Company OS.
+  if(opportunity.venture!==brand)throw new HTTPError(403,"INDEPENDENT_VENTURE_SCOPE_FORBIDDEN");
+  const marker="[OPPOS:"+rid+"]";
+  // The one canonical Noetfield intake id is enough context; no PII forwarded.
+  const title="Opportunity OS / "+role.replaceAll("_"," ")+" / "+id;
+  const objective=(
+    marker+" [SOURCE:"+id+"] [VENTURE:"+brand+"] "+
+    "Internal research, qualification or planning only; do not send outreach, "+
+    "publish, book meetings, grant permissions or claim collected money. "+
+    "Follow this scoped founder objective: "+mission.trim()
+  ).slice(0,1200);
+  const tasks=await companyRequest(token,"/api/control/tasks");
+  if(!Array.isArray(tasks.tasks))throw new HTTPError(502,"COMPANY_OS_READBACK_UNAVAILABLE");
+  const existing=tasks.tasks.find(t=>
+    t&&typeof t.objective==="string"&&t.objective.includes(marker)&&t.brand===brand);
+  if(existing){
+   return {created:false,idempotent:true,task_id:existing.id,
+    company_status:existing.status||"unknown",role,brand,source_intake_id:id,
+    readback_verified:true,external_contact:false,work_completed:false,cash_collected:null};
+  }
+  const flightKey=brand+":"+rid;
+  if(dispatchInFlight.has(flightKey))throw new HTTPError(409,"DISPATCH_ALREADY_IN_PROGRESS");
+  dispatchInFlight.add(flightKey);
+  try{
+   const created=await companyRequest(token,"/api/control/tasks","POST",
+    {brand,role,title,objective,depends_on:[]});
+   if(created.created!==true||typeof created.task_id!=="string"||!created.task_id){
+    throw new HTTPError(502,"COMPANY_OS_CREATE_UNCONFIRMED");
+   }
+   const readback=await companyRequest(token,"/api/control/tasks");
+   const row=Array.isArray(readback.tasks)?
+      readback.tasks.find(t=>t.id===created.task_id&&t.brand===brand&&
+        typeof t.objective==="string"&&t.objective.includes(marker)):null;
+   if(!row)throw new HTTPError(502,"TASK_CREATED_BUT_READBACK_UNVERIFIED_DO_NOT_BLINDLY_RETRY");
+   return {created:true,idempotent:false,task_id:row.id,
+    company_status:row.status||"unknown",role,brand,source_intake_id:id,
+    readback_verified:true,external_contact:false,work_completed:false,
+    cash_collected:null};
+  }finally{dispatchInFlight.delete(flightKey)}
+ }
+
  async function upstream(base,endpoint,{method="GET",body=null,secret="",timeout=10000}={}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeout);
@@ -223,10 +308,18 @@ export function createApp({platformBase=process.env.PLATFORM_API_BASE||"https://
       sample:"LATEST_100_SOURCE_CASES",matches,confirmed_matches:0,
       verified_outcomes:0,verified_collected_cash:null});
     }
-    const match=p.match(/^\/api\/operator\/cases\/(INT-[A-Za-z0-9-]{6,80})(?:\/(relationship|activity|invitations))?$/);
+    const match=p.match(/^\/api\/operator\/cases\/(INT-[A-Za-z0-9-]{6,80})(?:\/(relationship|activity|invitations|dispatch))?$/);
     if(match){
      const id=encodeURIComponent(match[1]),sub=match[2];
      const urlPath="/api/opportunities/desk/"+id+(sub?"/"+sub:"");
+     if(req.method==="POST"&&sub==="dispatch"){
+      const body=await jsonBody(req,6500);
+      const allowed=new Set(["role","mission","company_token","request_id","brand"]);
+      if(Object.keys(body).some(k=>!allowed.has(k)))throw new HTTPError(422,"UNSUPPORTED_DISPATCH_FIELDS");
+      const result=await dispatchInternalSpecialist(match[1],secret,body);
+      return reply(res,200,{ok:true,system:"EXISTING_BUSINESS_OS_CORE",...result});
+     }
+
      if(req.method==="GET"&&sub==="relationship"){
       const graph=await upstream(platform,urlPath,{secret});return reply(res,200,graph);
      }
