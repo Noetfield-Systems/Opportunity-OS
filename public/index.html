@@ -260,6 +260,11 @@
 <dialog class="case-dialog" id="caseDialog" aria-labelledby="dialogTitle">
   <div class="dialog-header"><div><span class="section-kicker">CANONICAL SOURCE RECORD</span><h2 id="dialogTitle">Opportunity</h2><span class="dialog-id" id="dialogId">—</span></div><button class="dialog-close" id="closeDialog" type="button" aria-label="Close opportunity">×</button></div>
   <div class="dialog-scroll">
+    <section class="dialog-section journey-section" aria-labelledby="journeyTitle">
+      <div class="journey-head"><div><span class="section-kicker">RELATIONSHIP JOURNEY · SOURCE-BACKED</span><h3 id="journeyTitle">From first contact to a real outcome.</h3></div><span class="journey-state" id="journeyState">Checking source stage</span></div>
+      <div id="caseJourney" class="case-journey" role="list" aria-label="Opportunity journey based on recorded source stage"></div>
+      <p class="small journey-footnote">Current stage is recorded in your canonical case. A draft is not a sent message, and “Won” does not prove payment or delivery.</p>
+    </section>
     <div id="caseDetail"></div>
     <section class="dialog-section reply-station" aria-labelledby="replyStationTitle">
       <span class="section-kicker">HUMAN-REVIEWED OUTREACH PLAYBOOK</span>
