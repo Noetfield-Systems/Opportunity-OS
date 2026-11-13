@@ -228,6 +228,27 @@ test("real Company OS specialist task is founder-authorized, source-scoped, read
   assert.equal(again.data.idempotent,true);
   assert.equal(again.data.created,false);
   assert.equal(again.data.task_id,first.data.task_id);
+  const statusPath="/api/operator/cases/INT-ABCDEF123456/company-status";
+  const noAuth=await req(base,statusPath,{method:"POST",body:{company_token:body.company_token}});
+  assert.equal(noAuth.status,401);
+  const badToken=await req(base,statusPath,{method:"POST",key,
+   body:{company_token:"invalid-company-token"}});
+  assert.equal(badToken.status,403);
+  const readback=await req(base,statusPath,{method:"POST",key,
+   body:{company_token:body.company_token}});
+  assert.equal(readback.status,200,JSON.stringify(readback.data));
+  assert.equal(readback.data.readback_verified,true);
+  assert.equal(readback.data.returned,1);
+  assert.equal(readback.data.tasks[0].task_id,first.data.task_id);
+  assert.equal(readback.data.tasks[0].status,"queued");
+  assert.equal(readback.data.independent_work_completion_verified,false);
+  assert.equal(readback.data.collected_cash_verified,false);
+  assert.ok(!JSON.stringify(readback.data).includes("first@example.invalid"));
+  const crossScope=await req(base,
+   "/api/operator/cases/INT-ABCDEF123458/company-status",
+   {method:"POST",key,body:{company_token:body.company_token}});
+  assert.equal(crossScope.status,403);
+
   const evidence=getEvidence();
   assert.equal(evidence.companyPosts,1,"Exactly one real Company OS task created in fixture");
   assert.equal(evidence.companyTasks.length,1);
