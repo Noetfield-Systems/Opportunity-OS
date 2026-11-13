@@ -42,3 +42,16 @@ Within a canonical case drawer, an authenticated Founder may choose a real Busin
 Only `noetfield`, `buildworkflow` and `signalforge` task scopes may dispatch through this Noetfield Company OS bridge. BuildRelay and TrustField cannot be silently routed into this execution service. No personal email or private original message body is copied into Company OS task objectives. The Company OS Founder token is not embedded in the app, Railway environment, repository, or browser storage: it is entered for each request, forwarded over HTTPS, and immediately cleared from the input.
 
 The Company OS tasks readback endpoint lists recent tasks. Duplicate detection uses a bounded list with an in-flight guard, not a transactional outbox. On ambiguous post-create networking failures, inspect the Company OS queue before retrying. Never infer a completed work result from a task creation receipt.
+
+
+## Conversion Loop v2 — Next Action Desk
+
+The new Next Action Desk is an **authenticated read-only projection** from the canonical Platform case page: `/api/operator/action-queue?limit=100&offset=0`. It prioritizes due/overdue work, unassigned owners, missing next actions, stale source cases and context-relevant commercial opportunities. Score and reasons are explainable and sourced from real case state, not predicted deal value.
+
+- `Set follow-up` writes the actual owner, next action and due date back into the original Platform intake record using `expected_revision` optimistic concurrency. The operator action is real, but does not imply an external message was sent.
+- Each eligible case gets a *human-review-required* draft with a source-grounded offer, ask and opportunity-specific question. Drafts are disabled without recorded contact consent. `Copy draft` and `Open email draft` are local/manual actions; **they do not mark any message as sent**.
+- `Record draft prepared` explicitly writes `draft_prepared` into the existing source timeline. An actual send or reply must be recorded separately after it happens, with relevant evidence. The system makes no SMTP or Gmail send claims.
+- The share kit links directly to `https://www.noetfield.com/connect/?type=...&source=linkedin`, the same public source-of-truth intake. Links do not export people or copy ventures and do not claim delivery.
+- The Action Desk only claims coverage of the current paginated source page; no all-time CRM analytics from a 100-case sample. Verified cash remains unknown until a real payment provider transaction is attributed.
+
+Tests: `tests/action_engine.test.mjs` exercises lane-specific context, due-date priority, consent, zero fabricated sends and source links. HTTP gateway and Chromium browser tests verify real-shaped readback, follow-up write and `draft_prepared` history (isolated mock upstream). `scripts/live-smoke.mjs` performs **synthetic, test-tagged** production writes and source readbacks; never fabricated customer revenue.
