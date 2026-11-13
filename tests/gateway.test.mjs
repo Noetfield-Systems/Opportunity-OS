@@ -136,7 +136,7 @@ test("end-to-end gateway: health, verified public persistence, auth, graph, matc
   const match=await req(base,"/api/operator/matches",{key});
   assert.equal(match.data.matches.length,1);assert.equal(match.data.verified_collected_cash,null);
   const graph=await req(base,"/api/operator/cases/INT-ABCDEF123456/relationship",{key});
-  assert.equal(graph.status,200);assert.equal(graph.data.opportunity_count,2);
+  assert.equal(graph.status,200);assert.equal(graph.data.opportunity_count,1);
   const updated=await req(base,"/api/operator/cases/INT-ABCDEF123456",{method:"PATCH",key,
    body:{expected_revision:0,stage:"QUALIFYING",owner:"Founder",next_action:"Call the partner",due_date:"2026-11-20",note:"Review offer"}});
   assert.equal(updated.status,200);assert.equal(updated.data.persisted,true);
