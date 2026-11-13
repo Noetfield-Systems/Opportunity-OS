@@ -357,6 +357,8 @@ function renderDialog(x){
  ||'<p class="empty-line">No operator interactions recorded.</p>';
  $("dialogInvitations").innerHTML=(x.invitations||[]).map(i=>'<div class="activity-row"><strong>'+h(i.scope||"Invitation")+' · '+h(i.state||"PREPARED")+'</strong><p>'+h(i.id||"")+'</p></div>').join("");
  $("invitationResult").hidden=true;$("invitationResult").replaceChildren();
+ const mailButton=$("inviteForm").querySelector('button[value="send"]');
+ if(mailButton){mailButton.disabled=x.consent_contact!==true;mailButton.title=x.consent_contact?"Only the original consenting email is eligible":"No contact consent recorded";}
  $("dispatchResult").hidden=true;$("dispatchResult").replaceChildren();
  renderReplyPreview(x);
 }
@@ -467,12 +469,26 @@ async function onDispatch(ev){
 async function onInvite(ev){
  ev.preventDefault();if(state.busy)return;
  const x=selectedCase(),fd=new FormData(ev.currentTarget);
+ const sendNow=ev.submitter?.value==="send";
  const request_id="req_"+(globalThis.crypto?.randomUUID?.().replace(/-/g,"")||String(Date.now())+"_"+Math.random().toString(36).slice(2));
  const body={expected_revision:Number(x.revision||0),scope:String(fd.get("scope")),
   message:String(fd.get("message")||"").trim(),request_id};
  state.busy=true;
  try{
-  const receipt=await call("/api/operator/cases/"+encodeURIComponent(x.intake_id)+"/invitations",{method:"POST",body});
+  const endpoint="/api/operator/cases/"+encodeURIComponent(x.intake_id)+"/invitations"+(sendNow?"/send":"");
+  const receipt=await call(endpoint,{method:"POST",body});
+  if(sendNow){
+   if(!receipt.provider_accepted||!receipt.provider_message_id)throw Error("No Resend provider acknowledgment returned");
+   await loadCases();
+   const updated=state.cases.find(row=>row.intake_id===x.intake_id);
+   if(updated)renderDialog(updated);
+   const wrap=$("invitationResult");wrap.hidden=false;wrap.replaceChildren();
+   const p=document.createElement("p");
+   p.textContent="Resend accepted invitation "+receipt.invitation_id+" (message "+receipt.provider_message_id+"). Provider acceptance recorded. Recipient delivery and collaboration acceptance remain unverified.";
+   wrap.append(p);
+   toast("Provider accepted the invitation; case status updated.");
+   return;
+  }
   if(receipt.created!==true||!receipt.share_token||!receipt.invitation_id)throw Error("No new private token issued");
   const url="https://www.noetfield.com/connect/respond/#case="+encodeURIComponent(x.intake_id)
     +"&inv="+encodeURIComponent(receipt.invitation_id)+"&token="+encodeURIComponent(receipt.share_token);

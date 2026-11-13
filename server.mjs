@@ -228,14 +228,15 @@ export function createApp({platformBase=process.env.PLATFORM_API_BASE||"https://
   }finally{dispatchInFlight.delete(flightKey)}
  }
 
- async function upstream(base,endpoint,{method="GET",body=null,secret="",timeout=10000}={}){
+ async function upstream(base,endpoint,{method="GET",body=null,secret="",timeout=10000,origin=""}={}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeout);
   try{
    const response=await fetcher(base+endpoint,{
     method,signal:controller.signal,redirect:"error",
     headers:{"Accept":"application/json",...(body?{"Content-Type":"application/json"}:{}),
-     ...(secret?{"X-Admin-Secret":secret}:{})},
+     ...(secret?{"X-Admin-Secret":secret}:{}),
+     ...(origin?{"Origin":origin}:{})},
     ...(body?{body:JSON.stringify(body)}:{})
    });
    let data={};try{data=await response.json()}catch{}
@@ -322,6 +323,27 @@ export function createApp({platformBase=process.env.PLATFORM_API_BASE||"https://
       source:"CANONICAL_PLATFORM_INTAKE",scope:"SAME_VENTURE_CONTACT_CONSENT_ONLY",
       sample:"LATEST_100_SOURCE_CASES",matches,confirmed_matches:0,
       verified_outcomes:0,verified_collected_cash:null});
+    }
+    const extension=p.match(new RegExp("^/api/operator/cases/(INT-[A-Za-z0-9-]{6,80})/(invitations/send|outcomes|workforce/status|workforce/handoff)$"));
+    if(extension){
+     const id=extension[1],sub=extension[2];
+     const target="/api/opportunities/desk/"+id+"/"+sub;
+     if(sub==="workforce/status"){
+      if(req.method!=="GET")throw new HTTPError(405,"METHOD_NOT_ALLOWED");
+      const data=await upstream(platform,target,{secret});
+      return reply(res,200,data);
+     }
+     if(req.method!=="POST")throw new HTTPError(405,"METHOD_NOT_ALLOWED");
+     const body=await jsonBody(req,6000);
+     const allowed={
+      "invitations/send":new Set(["expected_revision","scope","message","request_id"]),
+      "outcomes":new Set(["expected_revision","request_id","outcome_type","evidence_url","note"]),
+      "workforce/handoff":new Set(["request_id","owner","next_action","due_date","match_quality","assignment_reference"])
+     }[sub];
+     if(Object.keys(body).some(k=>!allowed.has(k)))throw new HTTPError(422,"UNSUPPORTED_ACTION_FIELDS");
+     const data=await upstream(platform,target,{method:"POST",body,secret,
+       origin:new URL(platform).origin});
+     return reply(res,200,data);
     }
     const match=p.match(/^\/api\/operator\/cases\/(INT-[A-Za-z0-9-]{6,80})(?:\/(relationship|activity|invitations|dispatch))?$/);
     if(match){

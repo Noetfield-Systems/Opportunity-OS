@@ -23,6 +23,30 @@ checks.push("Live v2 Action Desk browser application bundle reachable");
 r=await check("/styles.css");assert.equal(r.status,200);assert.ok(r.text.includes(".hero-orbit"));
 assert.ok(r.text.includes(".action-queue-list"),"Action Desk CSS not deployed");
 checks.push("Live Action Desk responsive styling reachable");
+const platformOrigin="https://platform.noetfield.com";
+async function platformCheck(path,options={}){
+ const response=await fetch(platformOrigin+path,{
+  redirect:"error",signal:AbortSignal.timeout(18000),
+  headers:{"Accept":"application/json",...(options.body?{"Content-Type":"application/json"}:{})},
+  ...options,
+ });
+ return response;
+}
+let canonical=await platformCheck("/api/opportunities/desk/app");
+assert.equal(canonical.status,200,"Live canonical Founder Desk HTML must load");
+let founderHtml=await canonical.text();
+assert.ok(founderHtml.includes("Email invitation via Resend"),"Latest provider invitation UI was not released");
+checks.push("Canonical Founder Desk with provider-backed invitation controls reachable");
+canonical=await platformCheck("/api/opportunities/desk/INT-VERIFY123456/invitations/send",{
+ method:"POST",body:JSON.stringify({request_id:"req_live_test_no_auth_0001",
+ expected_revision:0,scope:"trial",message:"Live auth denial check only"}),
+});
+assert.equal(canonical.status,403,"Unauthenticated production email send must be denied");
+checks.push("Live unauthenticated email invitation blocked without contacting any applicant");
+canonical=await platformCheck("/api/opportunities/desk/INT-VERIFY123456/workforce/status");
+assert.equal(canonical.status,403,"Private WorkforceOS source status must require founder auth");
+checks.push("Live WorkforceOS case readback requires existing founder authentication");
+
 r=await check("/api/operator/cases");assert.equal(r.status,401,"Unauthenticated case API must fail closed");
 checks.push("Unauthenticated Founder case endpoint rejected");
 
