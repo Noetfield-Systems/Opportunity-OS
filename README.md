@@ -34,3 +34,11 @@ An opportunity submission is not acceptance. Proposed match is not consent or em
 ## Deployment
 
 GitHub source: `Noetfield-Systems/Opportunity-OS`. Railway should deploy the existing source via Dockerfile on port `$PORT`. `npm test` runs an isolated fake upstream and makes no changes to actual contacts, bookings or payouts.
+
+## Existing Business OS specialist task dispatch
+
+Within a canonical case drawer, an authenticated Founder may choose a real Business OS specialist, enter the existing Company OS Founder token for that one request, and submit a strictly scoped internal mission. This is not a simulated LLM handoff: the Opportunity OS gateway calls the live Company OS `POST /api/control/tasks` endpoint, links the original intake ID and idempotency marker, and reads the task back from `GET /api/control/tasks`. On a readback-verified creation, the UI records a `workpacket_proposed` event in the original Platform opportunity timeline. A queued task is not completed work, customer contact, booking, acceptance, or collected money.
+
+Only `noetfield`, `buildworkflow` and `signalforge` task scopes may dispatch through this Noetfield Company OS bridge. BuildRelay and TrustField cannot be silently routed into this execution service. No personal email or private original message body is copied into Company OS task objectives. The Company OS Founder token is not embedded in the app, Railway environment, repository, or browser storage: it is entered for each request, forwarded over HTTPS, and immediately cleared from the input.
+
+The Company OS tasks readback endpoint lists recent tasks. Duplicate detection uses a bounded list with an in-flight guard, not a transactional outbox. On ambiguous post-create networking failures, inspect the Company OS queue before retrying. Never infer a completed work result from a task creation receipt.

@@ -195,11 +195,12 @@ function renderDialog(x){
  ||'<p class="empty-line">No operator interactions recorded.</p>';
  $("dialogInvitations").innerHTML=(x.invitations||[]).map(i=>'<div class="activity-row"><strong>'+h(i.scope||"Invitation")+' · '+h(i.state||"PREPARED")+'</strong><p>'+h(i.id||"")+'</p></div>').join("");
  $("invitationResult").hidden=true;$("invitationResult").replaceChildren();
+ $("dispatchResult").hidden=true;$("dispatchResult").replaceChildren();
 }
 function openCase(id){
  const found=state.cases.find(x=>x.intake_id===id);
  if(!found){toast("This case is not on the current source page.",true);return}
- state.selected=id;renderDialog(found);$("caseDialog").showModal();
+ state.selected=id;state.dispatchPendingKey="";state.dispatchPendingRid="";renderDialog(found);$("caseDialog").showModal();
 }
 async function mutateCase(fn){
  if(state.busy)return;state.busy=true;
@@ -220,6 +221,85 @@ function onActivity(ev){
  const body={expected_revision:Number(x.revision||0),action:String(fd.get("action")),
   body:String(fd.get("body")||"").trim(),evidence_url:String(fd.get("evidence_url")||"").trim()};
  mutateCase(()=>call("/api/operator/cases/"+encodeURIComponent(x.intake_id)+"/activity",{method:"POST",body}));
+}
+
+async function onDispatch(ev){
+ ev.preventDefault();if(state.busy)return;
+ const x=selectedCase(),form=ev.currentTarget,fd=new FormData(form);
+ const brand=String(x.initiative||"");
+ if(!["noetfield","buildworkflow","signalforge"].includes(brand)){
+  toast("This independent venture cannot dispatch through Noetfield Company OS.",true);
+  return;
+ }
+ const key=x.intake_id+"|"+String(fd.get("role"));
+ if(state.dispatchPendingKey!==key){
+  state.dispatchPendingKey=key;
+  state.dispatchPendingRid="req_"+(globalThis.crypto?.randomUUID?.().replace(/-/g,"")||
+   String(Date.now())+Math.random().toString(36).slice(2)+"AB345678901");
+ }
+ const body={role:String(fd.get("role")),brand,mission:String(fd.get("mission")||"").trim(),
+  company_token:String(fd.get("company_token")||""),request_id:state.dispatchPendingRid};
+ state.busy=true;
+ const submit=form.querySelector('button[type="submit"]');
+ submit.disabled=true;submit.textContent="Creating and verifying workpacket…";
+ // Clear sensitive token from the DOM immediately; it is never saved in local session data.
+ form.elements.company_token.value="";
+ try{
+  const receipt=await call("/api/operator/cases/"+encodeURIComponent(x.intake_id)+"/dispatch",
+   {method:"POST",body});
+  if(receipt.readback_verified!==true||!receipt.task_id)
+   throw Error("Company OS task readback is not confirmed");
+  const result=$("dispatchResult");result.hidden=false;result.replaceChildren();
+  const title=document.createElement("strong");
+  title.textContent=receipt.created?
+   "Real internal specialist task created and read back.":"Previously created task found; no duplicate created.";
+  const detail=document.createElement("p");
+  detail.textContent="Company OS task "+receipt.task_id+" · "+receipt.role+
+   " · "+(receipt.company_status||"status unknown")+
+   " · External outreach NOT sent · Work completion NOT verified.";
+  result.append(title,detail);
+  state.dispatchPendingRid="";state.dispatchPendingKey="";
+  if(receipt.created){
+   let noteLinked=false;
+   try{
+    await loadCases();
+    const current=state.cases.find(r=>r.intake_id===x.intake_id);
+    if(current){
+     await call("/api/operator/cases/"+encodeURIComponent(x.intake_id)+"/activity",
+      {method:"POST",body:{
+       expected_revision:Number(current.revision||0),
+       action:"workpacket_proposed",
+       body:"Company OS internal task created and readback-verified. "+
+        "Task ID: "+receipt.task_id+"; Role: "+receipt.role+"; Brand: "+brand+
+        "; Status: "+receipt.company_status+
+        ". Internal draft/research only. No external outreach or completed-work claim.",
+       evidence_url:""
+      }});
+     noteLinked=true;
+    }
+   }catch(error){
+    toast("Company task exists and is verified, but Platform timeline backlink was not confirmed: "+error.message,true);
+   }
+   if(noteLinked){
+    await loadCases();
+    const updated=state.cases.find(r=>r.intake_id===x.intake_id);
+    if(updated)renderDialog(updated);
+    const out=$("dispatchResult");out.hidden=false;out.replaceChildren(title,detail);
+    const link=document.createElement("p");link.textContent="Canonical case timeline backlink persisted.";
+    out.append(link);
+   }else{
+    const link=document.createElement("p");
+    link.textContent="Canonical case timeline backlink unverified; keep the task ID for reconciliation.";
+    result.append(link);
+   }
+  }
+  toast("Business OS task readback verified: "+receipt.task_id);
+ }catch(error){
+  toast("Dispatch not verified: "+error.message+
+    ". If a network error occurred after task creation, retry with the same form; the source task list is checked first.",true);
+ }finally{
+  state.busy=false;submit.disabled=false;submit.textContent="Dispatch internal workpacket ↗";
+ }
 }
 async function onInvite(ev){
  ev.preventDefault();if(state.busy)return;
@@ -312,6 +392,7 @@ $("caseDialog").addEventListener("click",ev=>{if(ev.target===$("caseDialog"))$("
 $("caseUpdateForm").addEventListener("submit",onUpdate);
 $("activityForm").addEventListener("submit",onActivity);
 $("inviteForm").addEventListener("submit",onInvite);
+$("dispatchForm").addEventListener("submit",onDispatch);
 $("caseSearch").addEventListener("input",renderCases);
 $("stageFilter").addEventListener("change",renderCases);
 $("ventureFilter").addEventListener("change",renderCases);

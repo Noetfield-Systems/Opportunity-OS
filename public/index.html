@@ -253,6 +253,34 @@
       </form>
       <div class="activity-history" id="dialogActivity"></div>
     </div>
+
+    <div class="dialog-section">
+      <span class="section-kicker">EXISTING COMPANY OS · ACTUAL INTERNAL WORKPACKET</span>
+      <h3>Dispatch a specialist.</h3>
+      <p class="small">An authorized Founder can create a real, bounded task in the deployed Business OS Core. Its assigned AI specialist can research, qualify and draft internally. This does not send external messages or grant permissions to independent ventures. A real Company OS task ID and verified readback are required.</p>
+      <form id="dispatchForm" class="dialog-form" autocomplete="off">
+        <label class="form-field">Responsible specialist
+          <select name="role">
+            <option value="sales_qualification">Revenue qualification</option>
+            <option value="partnerships">Partnership research</option>
+            <option value="market_intelligence">Market intelligence</option>
+            <option value="product_strategy">Product strategy</option>
+            <option value="engineering_operator">Engineering research</option>
+            <option value="chief_of_staff">Founder decision brief</option>
+          </select>
+        </label>
+        <label class="form-field">Scoped internal objective
+          <textarea name="mission" rows="3" required minlength="20" maxlength="900"
+            placeholder="Research this case's company and opportunity, assess likely mutual value, and prepare an evidence-backed suggested follow-up. No external outreach."></textarea>
+        </label>
+        <label class="form-field">Existing Business OS Founder access token
+          <input name="company_token" type="password" required minlength="16" maxlength="512"
+            placeholder="Only used for this Company OS request; not stored" autocomplete="off">
+        </label>
+        <button class="button button-primary" type="submit">Dispatch internal workpacket ↗</button>
+      </form>
+      <div class="invite-result" id="dispatchResult" hidden></div>
+    </div>
     <div class="dialog-section"><span class="section-kicker">CONSENT-AWARE COLLABORATION</span><h3>Invite, don't assume.</h3><p class="small">Create a scoped private invitation link. It is not sent automatically. Actual acceptance belongs to its token holder.</p>
       <form id="inviteForm" class="dialog-form">
         <label class="form-field">Invitation scope <select name="scope"><option value="collaboration">Collaboration</option><option value="introduction">Introduction</option><option value="trial">Scoped trial</option><option value="specialist_review">Specialist review</option><option value="partner">Partner discussion</option></select></label>

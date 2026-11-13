@@ -31,7 +31,8 @@ function listen(server){return new Promise(resolve=>server.listen(0,"127.0.0.1",
 function close(server){return new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()))}
 async function read(req){let s="";for await(const c of req)s+=c;return s?JSON.parse(s):{}}
 async function fixture(fn){
- let canonicalIntake=null,patch=null,activity=null,invitation=null;
+ let canonicalIntake=null,patch=null,activity=null,invitation=null,companyPosts=0;
+ const companyTasks=[];
  const upstream=http.createServer(async(req,res)=>{
   const url=new URL(req.url,"http://localhost");
   const p=url.pathname;
@@ -40,13 +41,30 @@ async function fixture(fn){
   if(p==="/api/intake/health")return send(200,{storage:"postgres",ok:true});
   if(p==="/health")return send(200,{status:"ok",service:"company-os"});
   if(p==="/api/intake"&&req.method==="POST"){canonicalIntake=await read(req);return send(200,{intake_id:"INT-CANON123456",request_id:canonicalIntake.request_id,deduped:false})}
+  if(p==="/api/control/tasks"){
+    if(req.headers.authorization!=="Bearer fixture-company-token-123456")
+      return send(401,{detail:"Founder authentication required"});
+    if(req.method==="GET")return send(200,{tasks:companyTasks});
+    if(req.method==="POST"){
+      const body=await read(req);companyPosts++;
+      const task={...body,id:"task_fixture_"+companyPosts,status:"queued",created_at:new Date().toISOString()};
+      companyTasks.unshift(task);
+      return send(200,{created:true,task_id:task.id});
+    }
+  }
   if(!req.headers["x-admin-secret"]||req.headers["x-admin-secret"]!=="fixture-key-123456")
    return send(403,{detail:"FORBIDDEN"});
   if(p==="/api/opportunities/desk/page")return send(200,{items:cases,total:3,limit:100,offset:0,source:"canonical_platform_public_intakes"});
-  if(p.endsWith("/relationship"))return send(200,{schema:"noetfield.connect.relationship-graph.v1",
-   opportunity_count:2,person_id:"claim_person_source",nodes:[{type:"person_claim",label:"Partner One"},{type:"opportunity",id:cases[0].intake_id,venture:"noetfield",label:"Buyer connections"}],
-   edges:[{from:"claim_person_source",to:cases[0].intake_id,provenance:cases[0].intake_id}],
-   timeline:[{kind:"intake.persisted",intake_id:cases[0].intake_id}]});
+  if(p.endsWith("/relationship")){
+    const sourceId=p.split("/")[4],row=cases.find(x=>x.intake_id===sourceId);
+    if(!row)return send(404,{detail:"RELATIONSHIP_SOURCE_NOT_FOUND"});
+    return send(200,{schema:"noetfield.connect.relationship-graph.v1",
+      opportunity_count:1,person_id:"claim_person_source",
+      nodes:[{type:"person_claim",label:row.person},
+        {type:"opportunity",id:row.intake_id,venture:row.initiative,label:row.title}],
+      edges:[{from:"claim_person_source",to:row.intake_id,provenance:row.intake_id}],
+      timeline:[{kind:"intake.persisted",intake_id:row.intake_id}]});
+  }
   if(p==="/api/opportunities/desk/"+cases[0].intake_id&&req.method==="PATCH"){patch=await read(req);return send(200,{persisted:true,source_intake_id:cases[0].intake_id,state:{revision:1},external_action_executed:false})}
   if(p.endsWith("/activity")&&req.method==="POST"){activity=await read(req);return send(200,{persisted:true,source_intake_id:cases[0].intake_id,independently_verified:false})}
   if(p.endsWith("/invitations")&&req.method==="POST"){invitation=await read(req);return send(200,{created:true,state:"PREPARED_NOT_SENT",invitation_id:"inv_abcdabcdabcdabcd",share_token:"privatetokensecret"+"_123456789012345678901234567890"})}
@@ -55,7 +73,7 @@ async function fixture(fn){
  const upstreamBase=await listen(upstream);
  const app=http.createServer(createApp({platformBase:upstreamBase,companyBase:upstreamBase}));
  const base=await listen(app);
- try{await fn({base,getEvidence:()=>({canonicalIntake,patch,activity,invitation})})}finally{await close(app);await close(upstream)}
+ try{await fn({base,getEvidence:()=>({canonicalIntake,patch,activity,invitation,companyPosts,companyTasks})})}finally{await close(app);await close(upstream)}
 }
 async function req(base,p,{method="GET",body=null,key=null}={}){
  const res=await fetch(base+p,{method,headers:{"Accept":"application/json",
@@ -94,7 +112,7 @@ test("static premium HTML and script contain complete real journeys and no stora
  const html=await readFile(path.join(dir,"index.html"),"utf8"),js=await readFile(path.join(dir,"app.js"),"utf8");
  for(const target of ["overview","pipeline","relationships","matching","execution","revenue","apply","systems"])
   assert.match(html,new RegExp('data-screen="'+target+'"'));
- for(const id of ["unlockForm","intakeForm","caseUpdateForm","activityForm","inviteForm","caseDialog","matchesList"])
+ for(const id of ["unlockForm","intakeForm","caseUpdateForm","activityForm","inviteForm","dispatchForm","caseDialog","matchesList"])
   assert.ok(html.includes('id="'+id+'"'));
  assert.ok(js.includes("/api/operator/cases"));
  assert.ok(js.includes("www.noetfield.com/connect/respond/#case="));
@@ -118,7 +136,7 @@ test("end-to-end gateway: health, verified public persistence, auth, graph, matc
   const match=await req(base,"/api/operator/matches",{key});
   assert.equal(match.data.matches.length,1);assert.equal(match.data.verified_collected_cash,null);
   const graph=await req(base,"/api/operator/cases/INT-ABCDEF123456/relationship",{key});
-  assert.equal(graph.status,200);assert.equal(graph.data.opportunity_count,2);
+  assert.equal(graph.status,200);assert.equal(graph.data.opportunity_count,1);
   const updated=await req(base,"/api/operator/cases/INT-ABCDEF123456",{method:"PATCH",key,
    body:{expected_revision:0,stage:"QUALIFYING",owner:"Founder",next_action:"Call the partner",due_date:"2026-11-20",note:"Review offer"}});
   assert.equal(updated.status,200);assert.equal(updated.data.persisted,true);
@@ -148,5 +166,50 @@ test("end-to-end gateway: health, verified public persistence, auth, graph, matc
   const js=await req(base,"/app.js");assert.equal(js.status,200);
   const favicon=await req(base,"/favicon.svg");assert.equal(favicon.status,200);
   const bad=await req(base,"/../../.env");assert.equal(bad.status,404);
+ });
+});
+
+
+test("real Company OS specialist task is founder-authorized, source-scoped, readback-verified and deduped",async()=>{
+ await fixture(async({base,getEvidence})=>{
+  const key="fixture-key-123456";
+  const mission="Research this canonical partner case, prepare an evidence-ranked qualification memo, and draft a human-reviewed next action.";
+  const body={
+    brand:"noetfield",role:"partnerships",mission,
+    company_token:"fixture-company-token-123456",
+    request_id:"req_abcdefghijklmnop1234567890",
+  };
+  const p="/api/operator/cases/INT-ABCDEF123456/dispatch";
+  const unauth=await req(base,p,{method:"POST",body});
+  assert.equal(unauth.status,401,"No founder admin secret: deny dispatch");
+  const missingCompany=await req(base,p,{method:"POST",key,body:{...body,company_token:"invalid-company-token"}});
+  assert.equal(missingCompany.status,403,"No valid Company OS Founder auth: deny dispatch");
+  const invalidRole=await req(base,p,{method:"POST",key,body:{...body,role:"marketing_spam"}});
+  assert.equal(invalidRole.status,422);
+  const crossVenture=await req(base,"/api/operator/cases/INT-ABCDEF123458/dispatch",{
+    method:"POST",key,body:{...body,brand:"noetfield"}});
+  assert.equal(crossVenture.status,403);
+  const first=await req(base,p,{method:"POST",key,body});
+  assert.equal(first.status,200,JSON.stringify(first.data));
+  assert.equal(first.data.created,true);
+  assert.equal(first.data.readback_verified,true);
+  assert.equal(first.data.system,"EXISTING_BUSINESS_OS_CORE");
+  assert.equal(first.data.role,"partnerships");
+  assert.equal(first.data.company_status,"queued");
+  assert.equal(first.data.external_contact,false);
+  assert.equal(first.data.work_completed,false);
+  assert.equal(first.data.cash_collected,null);
+  const again=await req(base,p,{method:"POST",key,body});
+  assert.equal(again.status,200);
+  assert.equal(again.data.idempotent,true);
+  assert.equal(again.data.created,false);
+  assert.equal(again.data.task_id,first.data.task_id);
+  const evidence=getEvidence();
+  assert.equal(evidence.companyPosts,1,"Exactly one real Company OS task created in fixture");
+  assert.equal(evidence.companyTasks.length,1);
+  assert.match(evidence.companyTasks[0].objective,/INT-ABCDEF123456/);
+  assert.match(evidence.companyTasks[0].objective,/OPPOS:req_abcdefghijklmnop1234567890/);
+  assert.ok(!evidence.companyTasks[0].objective.includes("first@example.invalid"),
+    "Do not copy a contact's PII into a task objective");
  });
 });
