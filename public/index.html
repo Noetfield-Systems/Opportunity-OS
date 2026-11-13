@@ -25,7 +25,7 @@
       <button class="nav-item" data-view="pipeline" type="button"><span class="nav-glyph">▤</span><span>Opportunity pipeline</span><span class="nav-shortcut">02</span></button>
       <button class="nav-item" data-view="relationships" type="button"><span class="nav-glyph">⌘</span><span>Relationship graph</span><span class="nav-shortcut">03</span></button>
       <button class="nav-item" data-view="matching" type="button"><span class="nav-glyph">◇</span><span>Reciprocal matching</span><span class="nav-shortcut">04</span></button>
-      <button class="nav-item" data-view="execution" type="button"><span class="nav-glyph">↗</span><span>Follow-up & execution</span><span class="nav-shortcut">05</span></button>
+      <button class="nav-item" data-view="execution" type="button"><span class="nav-glyph">↗</span><span>Next Action Desk</span><span class="nav-shortcut">05</span></button>
       <button class="nav-item" data-view="revenue" type="button"><span class="nav-glyph">▥</span><span>Commercial outcomes</span><span class="nav-shortcut">06</span></button>
     </nav>
     <div class="side-heading">NETWORK <span>02</span></div>
@@ -91,6 +91,15 @@
           <article class="stat"><div class="stat-head"><span>VERIFIED CASH</span><span class="stat-icon">◈</span></div><strong id="statRevenue">—</strong><div class="stat-footer"><span class="trend neutral">UNWIRED</span> Independent payment evidence</div></article>
         </div>
 
+        <section class="panel next-preview-panel" aria-labelledby="nextPreviewTitle">
+          <div class="panel-heading">
+            <div><span class="section-kicker">NEXT BEST WORK · SOURCE BACKED</span><h3 id="nextPreviewTitle">Start with the three most important conversations.</h3></div>
+            <button class="text-button" type="button" data-view="execution">Open Action Desk ↗</button>
+          </div>
+          <div id="overviewActions" class="next-preview-list">
+            <p class="empty-line">Unlock to see ranked source actions and prepared next steps.</p>
+          </div>
+        </section>
         <div class="two-column">
           <section class="panel panel-tall">
             <div class="panel-heading"><div><span class="section-kicker">INTAKE → QUALIFY → EXECUTE</span><h3>Opportunity flow</h3></div><button class="text-button" data-view="pipeline" type="button">Full pipeline ↗</button></div>
@@ -146,7 +155,24 @@
       </section>
 
       <section class="view" data-screen="execution" hidden>
-        <div class="page-head"><div><span class="section-kicker">04 / FOLLOW-THROUGH</span><h1>Keep momentum<span class="period">.</span></h1><p>Human-owned due dates, research notes, source-backed actions and prepared collaboration invitations.</p></div></div>
+        <div class="page-head"><div><span class="section-kicker">04 / CONVERSATIONS THAT MOVE THE BUSINESS</span><h1>Know who to contact <em>next.</em></h1><p>An explainable source-backed action queue. Prepare the right reply, set a concrete follow-up, then record what actually happened — without pretending a draft was sent.</p></div><button class="button button-quiet" type="button" id="actionRefresh">↻ Refresh priority queue</button></div>
+        <div class="action-kpi-row">
+          <div class="action-kpi"><span>ACTION NOW</span><strong id="actionNowCount">—</strong><small>Due / overdue in original records</small></div>
+          <div class="action-kpi"><span>UNASSIGNED</span><strong id="unassignedCount">—</strong><small>Open cases without an owner</small></div>
+          <div class="action-kpi"><span>CONTACT PERMISSION</span><strong id="contactableCount">—</strong><small>Cases eligible for reviewed replies</small></div>
+        </div>
+        <section class="panel action-queue-panel" aria-labelledby="actionListTitle">
+          <div class="panel-heading"><div><span class="section-kicker">RECOMMENDATIONS, NOT EXECUTION CLAIMS</span><h3 id="actionListTitle">Today's decision queue</h3></div>
+            <span class="small-chip">SOURCE-OWNED / CURRENT PAGE</span></div>
+          <div id="actionQueueList" class="action-queue-list"><p class="empty-line">Unlock to load real source cases.</p></div>
+          <p class="panel-caption">Scored from recorded stage, owner, dates and the original proposal. No message has been sent by the ranking engine. The queue covers the current page of canonical records.</p>
+        </section>
+        <section class="panel distribution-panel" aria-labelledby="distributionTitle">
+          <div class="panel-heading"><div><span class="section-kicker">INBOUND ACQUISITION / ONE CANONICAL LINK</span><h3 id="distributionTitle">Invite the right opportunities.</h3></div>
+          <span class="small-chip">NOT AUTOMATIC OUTREACH</span></div>
+          <p class="distribution-copy">Use the same public Noetfield Connect intake for every conversation. These pre-selected links help recipients understand the context immediately and preserve the original source — no second CRM, no mass messaging.</p>
+          <div id="shareLinks" class="share-link-grid"><p class="empty-line">Loading invitation routes…</p></div>
+        </section>
         <div class="two-column">
           <section class="panel"><div class="panel-heading"><div><span class="section-kicker">NEEDS ATTENTION</span><h3>Upcoming & overdue</h3></div><span class="small-chip">FROM SOURCE</span></div><div class="task-list" id="dueList"><p class="empty-line">Unlock to view actual due dates.</p></div></section>
           <section class="panel"><div class="panel-heading"><div><span class="section-kicker">EXECUTION BOUNDARIES</span><h3>Human and AI collaboration</h3></div></div>
@@ -235,6 +261,18 @@
   <div class="dialog-header"><div><span class="section-kicker">CANONICAL SOURCE RECORD</span><h2 id="dialogTitle">Opportunity</h2><span class="dialog-id" id="dialogId">—</span></div><button class="dialog-close" id="closeDialog" type="button" aria-label="Close opportunity">×</button></div>
   <div class="dialog-scroll">
     <div id="caseDetail"></div>
+    <section class="dialog-section reply-station" aria-labelledby="replyStationTitle">
+      <span class="section-kicker">HUMAN-REVIEWED OUTREACH PLAYBOOK</span>
+      <h3 id="replyStationTitle">A relevant first reply.</h3>
+      <p class="small">Tailored using this source case's actual offer, ask and opportunity type. A prepared draft is never counted as delivered or replied to.</p>
+      <div id="replyPreview" class="reply-preview"><p class="empty-line">Load the source action queue to prepare a reply.</p></div>
+      <div class="reply-actions">
+        <button id="copyReply" class="button button-quiet" type="button">Copy draft</button>
+        <button id="emailReply" class="button button-primary" type="button">Open email draft ↗</button>
+        <button id="logDraft" class="button button-quiet" type="button">Record draft prepared</button>
+      </div>
+      <p class="small reply-note">Opening a mail app is not evidence of delivery. Record actual sends or replies separately in the interaction timeline after they occur.</p>
+    </section>
     <div class="dialog-section"><span class="section-kicker">ACTUAL OWNER & NEXT ACTION</span><h3>Move work forward.</h3>
       <form id="caseUpdateForm" class="dialog-form">
         <div class="form-row"><label class="form-field">Stage <select name="stage"><option>NEW</option><option>QUALIFYING</option><option>ROUTED</option><option>ENGAGED</option><option>NEGOTIATING</option><option>PILOT</option><option>WON</option><option>LOST</option><option>ARCHIVED</option></select></label><label class="form-field">Human owner <input name="owner" maxlength="100" placeholder="Actual responsible person"></label></div>
