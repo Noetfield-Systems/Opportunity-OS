@@ -2,7 +2,7 @@ name: Opportunity OS production acceptance
 on:
   pull_request:
   push:
-    branches: [main, feat/premium-relationship-workspace-v1]
+    branches: [main, feat/premium-relationship-workspace-v1, feat/action-desk-conversion-v2]
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,6 +26,8 @@ jobs:
           test -f public/styles.css
           test -f public/app.js
           test -f public/favicon.svg
+          test -f action_engine.mjs
+          grep -q 'COPY action_engine.mjs' Dockerfile
           grep -q 'USER opportunity' Dockerfile
           ! grep -R 'localStorage\|sessionStorage' public/app.js
           ! grep -R 'AGENT_PRIVATE_KEY\|DATABASE_URL=' public/
