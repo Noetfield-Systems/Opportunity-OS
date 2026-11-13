@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'server.mjs'
+      - 'public/**'
       - 'scripts/live-smoke.mjs'
       - '.github/workflows/live.yml'
 permissions:
