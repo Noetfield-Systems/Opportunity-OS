@@ -264,3 +264,43 @@ test("actual HTTP Action Desk reads authenticated source cases; shares only cano
   assert.equal(share.data.no_external_send,true);
  });
 });
+
+
+test("authenticated provider invitation, reported outcome and WorkforceOS handoff stay source-linked", async()=>{
+ await fixture(async({base,getEvidence})=>{
+  const id="INT-ABCDEF123456",key="fixture-key-123456";
+  const prefix="/api/operator/cases/"+id;
+  const invitation={expected_revision:1,scope:"trial",
+   message:"A scoped project trial with a clear defined deliverable",
+   request_id:"req_12345678901234567890"};
+  const unauth=await req(base,prefix+"/invitations/send",{method:"POST",body:invitation});
+  assert.equal(unauth.status,401);
+  const forbiddenRecipient=await req(base,prefix+"/invitations/send",{method:"POST",key,
+   body:{...invitation,recipient:"third-party@example.invalid"}});
+  assert.equal(forbiddenRecipient.status,422,"Browser cannot choose the recipient");
+  const sent=await req(base,prefix+"/invitations/send",{method:"POST",key,body:invitation});
+  assert.equal(sent.status,200,JSON.stringify(sent.data));
+  assert.equal(sent.data.provider_accepted,true);
+  assert.equal(sent.data.recipient_delivery_verified,false);
+  assert.ok(!Object.hasOwn(sent.data,"share_token"));
+  assert.equal(getEvidence().providerSend.request_id,invitation.request_id);
+  const observed=await req(base,prefix+"/outcomes",{method:"POST",key,
+   body:{expected_revision:2,request_id:"outcome_12345678901234567890",
+    outcome_type:"trial",evidence_url:"https://example.invalid/receipt",
+    note:"Operator recorded a scoped trial, not independent verification."}});
+  assert.equal(observed.status,200,JSON.stringify(observed.data));
+  assert.equal(observed.data.independently_verified,false);
+  assert.equal(observed.data.collected_cash_verified,false);
+  assert.equal(getEvidence().reportedOutcome.outcome_type,"trial");
+  const status=await req(base,prefix+"/workforce/status",{key});
+  assert.equal(status.status,200);
+  assert.equal(status.data.case.verification_state,"NOT_INDEPENDENTLY_VERIFIED");
+  const handoff=await req(base,prefix+"/workforce/handoff",{method:"POST",key,
+   body:{request_id:"handoff_12345678901234567890",owner:"Human operator",
+    next_action:"Review the original source proposal",due_date:"2026-11-19",
+    match_quality:"not_assessed",assignment_reference:""}});
+  assert.equal(handoff.status,200,JSON.stringify(handoff.data));
+  assert.equal(handoff.data.independently_verified,false);
+  assert.equal(getEvidence().workforceHandoff.owner,"Human operator");
+ });
+});
