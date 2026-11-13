@@ -32,6 +32,7 @@ function close(server){return new Promise((resolve,reject)=>server.close(err=>er
 async function read(req){let s="";for await(const c of req)s+=c;return s?JSON.parse(s):{}}
 async function fixture(fn){
  let canonicalIntake=null,patch=null,activity=null,invitation=null,companyPosts=0;
+ let providerSend=null,reportedOutcome=null,workforceHandoff=null;
  const companyTasks=[];
  const upstream=http.createServer(async(req,res)=>{
   const url=new URL(req.url,"http://localhost");
@@ -54,6 +55,29 @@ async function fixture(fn){
   }
   if(!req.headers["x-admin-secret"]||req.headers["x-admin-secret"]!=="fixture-key-123456")
    return send(403,{detail:"FORBIDDEN"});
+  if(p.endsWith("/invitations/send")&&req.method==="POST"){
+    if(req.headers.origin!==upstreamBase)return send(403,{detail:"CROSS_ORIGIN_WRITE_DENIED"});
+    providerSend=await read(req);
+    return send(200,{persisted:true,sent:true,provider_accepted:true,
+     invitation_id:"inv_abcdef0123456789",provider_message_id:"provider_fixture_123456",
+     recipient_delivery_verified:false,accepted_by_recipient:false});
+  }
+  if(p.endsWith("/outcomes")&&req.method==="POST"){
+    if(req.headers.origin!==upstreamBase)return send(403,{detail:"CROSS_ORIGIN_WRITE_DENIED"});
+    reportedOutcome=await read(req);
+    return send(200,{persisted:true,independently_verified:false,
+     collected_cash_verified:false,reported_outcome:{type:reportedOutcome.outcome_type}});
+  }
+  if(p.endsWith("/workforce/status")&&req.method==="GET"){
+    return send(200,{connected:true,case:{case_id:"opp_nf_source_123456",
+     owner:"Human operator",stage:"qualifying",verification_state:"NOT_INDEPENDENTLY_VERIFIED"}});
+  }
+  if(p.endsWith("/workforce/handoff")&&req.method==="POST"){
+    if(req.headers.origin!==upstreamBase)return send(403,{detail:"CROSS_ORIGIN_WRITE_DENIED"});
+    workforceHandoff=await read(req);
+    return send(200,{accepted:true,case:{case_id:"opp_nf_source_123456",
+     owner:workforceHandoff.owner,stage:"qualifying"},independently_verified:false});
+  }
   if(p==="/api/opportunities/desk/page")return send(200,{items:cases,total:3,limit:100,offset:0,source:"canonical_platform_public_intakes"});
   if(p.endsWith("/relationship")){
     const sourceId=p.split("/")[4],row=cases.find(x=>x.intake_id===sourceId);
@@ -73,7 +97,7 @@ async function fixture(fn){
  const upstreamBase=await listen(upstream);
  const app=http.createServer(createApp({platformBase:upstreamBase,companyBase:upstreamBase}));
  const base=await listen(app);
- try{await fn({base,getEvidence:()=>({canonicalIntake,patch,activity,invitation,companyPosts,companyTasks})})}finally{await close(app);await close(upstream)}
+ try{await fn({base,getEvidence:()=>({canonicalIntake,patch,activity,invitation,companyPosts,companyTasks,providerSend,reportedOutcome,workforceHandoff})})}finally{await close(app);await close(upstream)}
 }
 async function req(base,p,{method="GET",body=null,key=null}={}){
  const res=await fetch(base+p,{method,headers:{"Accept":"application/json",
