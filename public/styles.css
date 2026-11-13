@@ -382,3 +382,22 @@ h1,h2,h3,p{margin-top:0}
  .share-link-grid{grid-template-columns:1fr}
  .reply-actions .button{flex:1;white-space:normal}
 }
+
+
+/* Source-owned Relationship Journey: human process stations, no invented achievements. */
+.journey-section{padding-top:10px}
+.journey-head{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:17px}
+.journey-head h3{margin:7px 0 0;font-size:20px;letter-spacing:-.025em}
+.journey-state{display:inline-flex;align-items:center;padding:6px 10px;border:1px solid #6b8d9a88;border-radius:20px;color:#9ed6c7;font-size:12px;font-weight:750;white-space:nowrap}
+.case-journey{display:flex;gap:7px;overflow-x:auto;padding:3px 2px 12px;scroll-snap-type:x mandatory}
+.journey-station{flex:0 0 115px;min-height:134px;scroll-snap-align:start;border:1px solid #63758755;border-radius:13px;padding:13px 10px;background:#18253273;display:flex;flex-direction:column;gap:5px;opacity:.78}
+.journey-station.current{opacity:1;background:linear-gradient(145deg,#18494266,#19334c);border-color:#8acdb9;box-shadow:inset 0 0 0 1px #83cfb626}
+.journey-station.previously-passed{opacity:.85}
+.journey-step-symbol{height:27px;width:27px;border-radius:8px;background:#31485d;color:#b4ced9;display:grid;place-items:center;font-size:18px;margin-bottom:4px}
+.journey-station.current .journey-step-symbol{background:#7ad3b2;color:#113d31}
+.journey-station small{font-size:10px;color:#839db0;letter-spacing:.065em}
+.journey-station strong{font-size:12px;color:inherit}
+.journey-station>span:last-child{font-size:10px;color:#96a9b9;line-height:1.3}
+.journey-footnote{margin:2px 0 13px;max-width:660px;color:#91a8b4}
+@media(max-width:570px){.journey-head{flex-direction:column}.journey-station{flex-basis:121px;min-height:135px}}
+@media(prefers-reduced-motion:reduce){.case-journey{scroll-behavior:auto}}
