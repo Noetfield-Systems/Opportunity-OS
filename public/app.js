@@ -388,6 +388,41 @@ function onActivity(ev){
  mutateCase(()=>call("/api/operator/cases/"+encodeURIComponent(x.intake_id)+"/activity",{method:"POST",body}));
 }
 
+async function onReadCompanyTasks(){
+ if(state.busy)return;
+ const x=selectedCase(),form=$("dispatchForm");
+ const token=String(form.elements.company_token.value||"").trim();
+ form.elements.company_token.value="";
+ if(token.length<16){toast("Enter the existing Company OS Founder token for this readback.",true);return}
+ state.busy=true;
+ const btn=$("readCompanyTasks");btn.disabled=true;btn.textContent="Reading actual Company OS ledger…";
+ try{
+  const result=await call("/api/operator/cases/"+encodeURIComponent(x.intake_id)+"/company-status",
+   {method:"POST",body:{company_token:token}});
+  if(result.readback_verified!==true||!Array.isArray(result.tasks))
+   throw Error("Company OS status readback unconfirmed");
+  const out=$("dispatchResult");out.hidden=false;out.replaceChildren();
+  const heading=document.createElement("strong");
+  heading.textContent=result.returned+" real source-linked Company OS tasks";
+  out.append(heading);
+  for(const t of result.tasks){
+   const p=document.createElement("p");
+   p.textContent="Task "+t.task_id+" · "+t.role+" · "+t.status+
+    " · Checked against existing Company OS. Independent completion not verified.";
+   out.append(p);
+  }
+  if(!result.tasks.length){
+   const p=document.createElement("p");
+   p.textContent="No Company OS tasks found in the current authorized source ledger. This does not imply delivery.";
+   out.append(p);
+  }
+  toast("Company OS source-task status read back successfully.");
+ }catch(error){
+  toast("Company OS readback unconfirmed: "+error.message,true);
+ }finally{
+  state.busy=false;btn.disabled=false;btn.textContent="Read current Company OS task status ↗";
+ }
+}
 async function onDispatch(ev){
  ev.preventDefault();if(state.busy)return;
  const x=selectedCase(),form=ev.currentTarget,fd=new FormData(form);
@@ -576,6 +611,7 @@ $("caseUpdateForm").addEventListener("submit",onUpdate);
 $("activityForm").addEventListener("submit",onActivity);
 $("inviteForm").addEventListener("submit",onInvite);
 $("dispatchForm").addEventListener("submit",onDispatch);
+$("readCompanyTasks").addEventListener("click",onReadCompanyTasks);
 $("caseSearch").addEventListener("input",renderCases);
 $("stageFilter").addEventListener("change",renderCases);
 $("ventureFilter").addEventListener("change",renderCases);
