@@ -19,6 +19,7 @@ r=await check("/apply");assert.equal(r.status,200);assert.match(r.text,/id="inta
 checks.push("Public intake page reachable");
 r=await check("/app.js");assert.equal(r.status,200);assert.ok(r.text.includes("/api/operator/cases"));
 assert.ok(r.text.includes("renderActionDesk"),"Next Action Desk client bundle not deployed");
+assert.ok(r.text.includes("onReadCompanyTasks"),"Company OS task readback UI not yet deployed");
 checks.push("Live v2 Action Desk browser application bundle reachable");
 r=await check("/styles.css");assert.equal(r.status,200);assert.ok(r.text.includes(".hero-orbit"));
 assert.ok(r.text.includes(".action-queue-list"),"Action Desk CSS not deployed");
@@ -49,6 +50,13 @@ checks.push("Live WorkforceOS case readback requires existing founder authentica
 
 r=await check("/api/operator/cases");assert.equal(r.status,401,"Unauthenticated case API must fail closed");
 checks.push("Unauthenticated Founder case endpoint rejected");
+
+r=await check("/api/operator/cases/INT-VERIFY123456/company-status",{
+ method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+ body:JSON.stringify({company_token:"no-real-founder-token-used"})
+});
+assert.equal(r.status,401,"Company OS task-status proxy must deny unauthenticated visitors");
+checks.push("Live Company OS task readback requires both Platform operator and Company OS authorization");
 
 r=await check("/api/operator/action-queue");
 assert.equal(r.status,401,"Next Action Desk must never expose contact PII without Founder authentication");

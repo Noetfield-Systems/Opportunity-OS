@@ -228,6 +228,27 @@ export function createApp({platformBase=process.env.PLATFORM_API_BASE||"https://
   }finally{dispatchInFlight.delete(flightKey)}
  }
 
+ async function readSourceCompanyTasks(id,secret,token){
+  if(!validId(id))throw new HTTPError(422,"INVALID_SOURCE_CASE_ID");
+  const graph=await upstream(platform,
+   "/api/opportunities/desk/"+encodeURIComponent(id)+"/relationship",{secret});
+  const found=Array.isArray(graph.nodes)?graph.nodes.find(
+    n=>n.type==="opportunity"&&n.id===id):null;
+  if(!found)throw new HTTPError(404,"CANONICAL_SOURCE_NOT_FOUND");
+  if(!COMPANY_BRANDS.has(found.venture))throw new HTTPError(403,"INDEPENDENT_VENTURE_SCOPE_FORBIDDEN");
+  const data=await companyRequest(token,"/api/control/tasks");
+  if(!Array.isArray(data.tasks))throw new HTTPError(502,"COMPANY_OS_READBACK_UNAVAILABLE");
+  const marker="[SOURCE:"+id+"]";
+  const matches=data.tasks.filter(t=>t&&t.brand===found.venture&&
+   typeof t.objective==="string"&&t.objective.includes(marker)).slice(0,30);
+  return {source:"EXISTING_COMPANY_OS_TASK_LEDGER",source_intake_id:id,
+   venture:found.venture,readback_verified:true,tasks:matches.map(t=>({
+    task_id:t.id,role:t.role||null,status:t.status||"unknown",
+    created_at:t.created_at||null,updated_at:t.updated_at||null,
+   })),returned:matches.length,
+   independent_work_completion_verified:false,external_contact_verified:false,
+   collected_cash_verified:false};
+ }
  async function upstream(base,endpoint,{method="GET",body=null,secret="",timeout=10000,origin=""}={}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeout);
@@ -323,6 +344,15 @@ export function createApp({platformBase=process.env.PLATFORM_API_BASE||"https://
       source:"CANONICAL_PLATFORM_INTAKE",scope:"SAME_VENTURE_CONTACT_CONSENT_ONLY",
       sample:"LATEST_100_SOURCE_CASES",matches,confirmed_matches:0,
       verified_outcomes:0,verified_collected_cash:null});
+    }
+    const companyState=p.match(new RegExp("^/api/operator/cases/(INT-[A-Za-z0-9-]{6,80})/company-status$"));
+    if(companyState){
+     if(req.method!=="POST")throw new HTTPError(405,"METHOD_NOT_ALLOWED");
+     const body=await jsonBody(req,2500);
+     if(Object.keys(body).some(k=>k!=="company_token"))
+      throw new HTTPError(422,"UNSUPPORTED_STATUS_FIELDS");
+     const result=await readSourceCompanyTasks(companyState[1],secret,body.company_token);
+     return reply(res,200,result);
     }
     const extension=p.match(new RegExp("^/api/operator/cases/(INT-[A-Za-z0-9-]{6,80})/(invitations/send|outcomes|workforce/status|workforce/handoff)$"));
     if(extension){
