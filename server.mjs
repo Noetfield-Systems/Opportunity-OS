@@ -228,14 +228,15 @@ export function createApp({platformBase=process.env.PLATFORM_API_BASE||"https://
   }finally{dispatchInFlight.delete(flightKey)}
  }
 
- async function upstream(base,endpoint,{method="GET",body=null,secret="",timeout=10000}={}){
+ async function upstream(base,endpoint,{method="GET",body=null,secret="",timeout=10000,origin=""}={}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeout);
   try{
    const response=await fetcher(base+endpoint,{
     method,signal:controller.signal,redirect:"error",
     headers:{"Accept":"application/json",...(body?{"Content-Type":"application/json"}:{}),
-     ...(secret?{"X-Admin-Secret":secret}:{})},
+     ...(secret?{"X-Admin-Secret":secret}:{}),
+     ...(origin?{"Origin":origin}:{})},
     ...(body?{body:JSON.stringify(body)}:{})
    });
    let data={};try{data=await response.json()}catch{}
