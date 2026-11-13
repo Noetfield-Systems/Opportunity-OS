@@ -18,11 +18,24 @@ checks.push("Full premium app HTML, pipeline, matching and CSP reachable");
 r=await check("/apply");assert.equal(r.status,200);assert.match(r.text,/id="intakeForm"/);
 checks.push("Public intake page reachable");
 r=await check("/app.js");assert.equal(r.status,200);assert.ok(r.text.includes("/api/operator/cases"));
-checks.push("Live browser application bundle reachable");
+assert.ok(r.text.includes("renderActionDesk"),"Next Action Desk client bundle not deployed");
+checks.push("Live v2 Action Desk browser application bundle reachable");
 r=await check("/styles.css");assert.equal(r.status,200);assert.ok(r.text.includes(".hero-orbit"));
-checks.push("Live premium responsive styling reachable");
+assert.ok(r.text.includes(".action-queue-list"),"Action Desk CSS not deployed");
+checks.push("Live Action Desk responsive styling reachable");
 r=await check("/api/operator/cases");assert.equal(r.status,401,"Unauthenticated case API must fail closed");
 checks.push("Unauthenticated Founder case endpoint rejected");
+
+r=await check("/api/operator/action-queue");
+assert.equal(r.status,401,"Next Action Desk must never expose contact PII without Founder authentication");
+checks.push("Next Action Desk protected from unauthenticated access");
+r=await check("/api/share-links");
+assert.equal(r.status,200,"Canonical invite share kit public API");
+assert.equal(r.data.links.length,6);
+assert.ok(r.data.links.every(x=>x.url.startsWith("https://www.noetfield.com/connect/?type=")));
+assert.equal(r.data.no_external_send,true);
+checks.push("Six production canonical Connect acquisition links available; no auto-outreach");
+
 r=await check("/api/system");assert.equal(r.status,200);assert.equal(r.data.source,"LIVE_READ_ONLY_CHECK");
 assert.equal(r.data.platform.reachable,true,"Canonical Platform API unreachable from Railway");
 assert.equal(r.data.platform.storage,"postgres","Canonical intake is not confirmed PostgreSQL");
