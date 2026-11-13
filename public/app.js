@@ -311,8 +311,34 @@ function renderRevenue(){
  text("wonCount",state.key?state.cases.filter(x=>x.stage==="WON").length:"—");
  text("openCount",state.key?state.cases.filter(x=>!TERMINAL.has(x.stage||"NEW")).length:"—");
 }
+function renderCaseJourney(x){
+ const labels=[
+  ["NEW","Received","A real request was recorded."],
+  ["QUALIFYING","Understand","Research the proposal and evaluate reciprocal value."],
+  ["ROUTED","Assign","Choose the responsible person or venture."],
+  ["ENGAGED","Connect","Track genuine contact and counterpart response."],
+  ["NEGOTIATING","Discuss","Clarify terms and requested commitments."],
+  ["PILOT","Work together","Track the actual pilot and its result."],
+  ["WON","Recorded win","A case stage, not a payment receipt."]
+ ];
+ const idx=labels.findIndex(a=>a[0]===x.stage);
+ const stateText=x.stage==="LOST"?"Closed · not won":x.stage==="ARCHIVED"?"Archived":labels[idx]?.[1]||"Status not mapped";
+ text("journeyState",stateText);
+ const terminal=x.stage==="LOST"||x.stage==="ARCHIVED";
+ $("caseJourney").innerHTML=labels.map(([value,title,description],i)=>{
+  const className=terminal?"not-observed":i===idx?"current":i<idx?"previously-passed":"not-observed";
+  // Earlier stages are inferred by stage order only. Never label as achieved without source events.
+  const meaning=terminal?"Historical stages not verified":i===idx?"Current source stage":i<idx?"Earlier stage inferred from sequence":"Not recorded yet";
+  return '<div class="journey-station '+className+'" role="listitem" title="'+h(description)+'">'+
+    '<span class="journey-step-symbol" aria-hidden="true">'+(i===idx?"◉":i<idx?"·":"○")+'</span>'+
+    '<small>STEP '+String(i+1).padStart(2,"0")+'</small><strong>'+h(title)+'</strong>'+
+    '<span>'+h(meaning)+'</span></div>';
+ }).join("");
+}
+
 function renderDialog(x){
  if(!x)return;
+ renderCaseJourney(x);
  text("dialogTitle",x.title||"Source opportunity");text("dialogId",x.intake_id+" · Revision "+x.revision);
  const details=[["Person",x.person],["Organization",x.organization],["Email",x.email],["Venture",labelVenture(x.initiative)],
   ["Source",x.source],["Role",x.participant_role],["Stage",x.stage],["Priority",String(x.priority_score??"—")],
