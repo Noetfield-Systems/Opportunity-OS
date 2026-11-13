@@ -79,3 +79,49 @@ test("Founder: unlock → source case → persisted edit → relationship graph 
  await page.locator("#lockButton").click();
  await expect(page.locator("#unlockBackdrop")).toBeVisible();
 });
+
+
+test("Founder dispatches bounded specialist via real UI and sees verified task receipt",async({page})=>{
+ const row={intake_id:"INT-ABCDEF123456",title:"Actual case with internal research",
+  person:"Partner X",organization:"Private Partner",email:"private@example.invalid",
+  initiative:"noetfield",stage:"QUALIFYING",owner:"Founder",revision:1,
+  consent_contact:true,priority_score:81,offer:"Pilot research",ask:"Distribution",
+  interactions:[],activity:[],invitations:[]};
+ await page.route("**/api/system",route=>route.fulfill({json:{
+  platform:{reachable:true,storage:"postgres"},company_os:{reachable:true}}}));
+ await page.route("**/api/operator/cases?**",route=>route.fulfill({json:{
+  items:[row],total:1,limit:100,offset:0}}));
+ await page.route("**/api/operator/matches",route=>route.fulfill({json:{matches:[]}}));
+ let dispatched=null,backlink=null;
+ await page.route("**/api/operator/cases/INT-ABCDEF123456/dispatch",async route=>{
+  dispatched=JSON.parse(route.request().postData());
+  await route.fulfill({json:{ok:true,system:"EXISTING_BUSINESS_OS_CORE",created:true,
+   readback_verified:true,task_id:"task_real_fixture_001",
+   company_status:"queued",role:dispatched.role,brand:"noetfield",external_contact:false}});
+ });
+ await page.route("**/api/operator/cases/INT-ABCDEF123456/activity",async route=>{
+  backlink=JSON.parse(route.request().postData());
+  await route.fulfill({json:{persisted:true,state:{revision:2},independently_verified:false}});
+ });
+ await page.goto("/");
+ await page.locator("#operatorKey").fill("fixture-operator-key");
+ await page.locator("#unlockForm button[type=submit]").click();
+ await expect(page.locator("#unlockBackdrop")).toBeHidden();
+ await page.locator('.nav-item[data-view="pipeline"]').click();
+ await page.locator('#casesTable tr[data-case="INT-ABCDEF123456"]').click();
+ await expect(page.locator("#dispatchForm")).toBeVisible();
+ await page.locator('#dispatchForm select[name="role"]').selectOption("partnerships");
+ await page.locator('#dispatchForm textarea[name="mission"]').fill(
+  "Prepare a sourced internal partner qualification memo and recommend a human-reviewed action. No external send.");
+ await page.locator('#dispatchForm input[name="company_token"]').fill("fixture-company-token-123456");
+ await page.locator('#dispatchForm button[type="submit"]').click();
+ await expect(page.locator("#dispatchResult")).toContainText("task_real_fixture_001");
+ await expect(page.locator("#dispatchResult")).toContainText("NOT sent");
+ expect(dispatched.role).toBe("partnerships");
+ expect(dispatched.brand).toBe("noetfield");
+ expect(dispatched.company_token).toBe("fixture-company-token-123456");
+ expect(dispatched.request_id).toMatch(/^req_/);
+ expect(backlink.action).toBe("workpacket_proposed");
+ expect(backlink.body).toContain("task_real_fixture_001");
+ await expect(page.locator('#dispatchForm input[name="company_token"]')).toHaveValue("");
+});
